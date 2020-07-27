@@ -10,12 +10,12 @@ namespace TU20Bot {
         private readonly string token;
 
         private DiscordSocketClient client;
-        private Commands handler;
+        private Handler handler;
 
         // Initializes Discord.Net
         private async Task start() {
             client = new DiscordSocketClient();
-            handler = new Commands(client);
+            handler = new Handler(client);
 
             await handler.init();
             

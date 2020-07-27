@@ -9,7 +9,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TU20Bot {
-    public class Commands {
+    public class Handler {
         // Config
         private const char prefix = '-';
         private const bool showStackTrace = true;
@@ -53,12 +53,19 @@ namespace TU20Bot {
         // Initializes the Message Handler, subscribe to events, etc.
         public async Task init() {
             client.Log += log;
+            client.UserJoined += userJoined;
             client.MessageReceived += checkMessage;
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }
+
+        public async Task userJoined(SocketGuildUser user) {
+            var channel = (IMessageChannel) client.GetChannel(737081385583378447);
+
+            await channel.SendMessageAsync($"Hello there! <@{user.Id}>");
+        }
         
-        public Commands(DiscordSocketClient client) {
+        public Handler(DiscordSocketClient client) {
             this.client = client;
             
             commands = new CommandService();
