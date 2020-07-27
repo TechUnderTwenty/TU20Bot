@@ -38,7 +38,7 @@ namespace TU20Bot {
             
             // Start bot with token from "token.txt" in working folder.
             try {
-                var token = File.ReadAllText("token.txt");
+                var token = File.ReadAllText("token.txt").Trim();
                 new Program(token).start().GetAwaiter().GetResult();
             } catch (IOException) {
                 Console.WriteLine("Could not read from token.txt. Did you run `init <token>`?");
