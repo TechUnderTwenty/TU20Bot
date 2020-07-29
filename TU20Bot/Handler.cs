@@ -20,7 +20,11 @@ namespace TU20Bot {
         private readonly CommandService commands;
         private readonly ServiceProvider services;
 
-        private string[] msgArr = { "Hello there!", "Whats poppin",
+        private string[] greetings = {
+            "Hello there!",
+            "Whats poppin",
+            "Wagwan",
+            ...
             "Wagwan", "Hi", "AHOY", "Welcome", "Greetings", "Howdy"};
 
         private Random rndInt = new Random();
