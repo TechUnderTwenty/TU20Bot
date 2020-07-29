@@ -27,7 +27,7 @@ namespace TU20Bot {
             ...
             "Wagwan", "Hi", "AHOY", "Welcome", "Greetings", "Howdy"};
 
-        private Random rndInt = new Random();
+        private Random randomizer = new Random();
 
         // Called by Discord.Net when it wants to log something.
         private static Task log(LogMessage message) {
