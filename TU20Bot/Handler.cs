@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -18,6 +19,14 @@ namespace TU20Bot {
         
         private readonly CommandService commands;
         private readonly ServiceProvider services;
+
+        private string[] greetings = {
+            "Hello there!",
+            "Whats poppin",
+            "Wagwan", "Hi", "AHOY", "Welcome", "Greetings", "Howdy"};
+
+        private Random randomizer = new Random();
+        private readonly ulong generalChatId = 737081385583378447;
 
         // Called by Discord.Net when it wants to log something.
         private static Task log(LogMessage message) {
@@ -60,9 +69,9 @@ namespace TU20Bot {
         }
 
         public async Task userJoined(SocketGuildUser user) {
-            var channel = (IMessageChannel) client.GetChannel(737081385583378447);
+            var channel = (IMessageChannel) client.GetChannel(generalChatId);
 
-            await channel.SendMessageAsync($"Hello there! <@{user.Id}>");
+            await channel.SendMessageAsync(greetings[randomizer.Next(0, greetings.Length)] + $" <@{user.Id}>");
         }
         
         public Handler(DiscordSocketClient client) {
