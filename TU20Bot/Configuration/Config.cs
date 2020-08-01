@@ -1,6 +1,12 @@
+using System;
 using System.Collections.Generic;
 
 namespace TU20Bot.Configuration {
+    public class UserJoinInfo {
+        public ulong id;
+        public DateTimeOffset time;
+    }
+
     public class Config {
         public ulong guildId = 230737273350520834; // TU20
         
@@ -16,5 +22,7 @@ namespace TU20Bot.Configuration {
             "Greetings",
             "Howdy"
         };
+        
+        public List<UserJoinInfo> usersJoined = new List<UserJoinInfo>();
     }
 }

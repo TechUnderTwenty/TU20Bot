@@ -8,6 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.DependencyInjection;
+using TU20Bot.Configuration;
 
 namespace TU20Bot {
     public class Handler {
@@ -55,6 +56,11 @@ namespace TU20Bot {
         
         // Called when a user joins the server.
         private async Task userJoined(SocketGuildUser user) {
+            client.config.usersJoined.Add(new UserJoinInfo {
+                id = user.Id,
+                time = DateTimeOffset.UtcNow // using this over user.JoinedAt, I don't trust it
+            });
+            
             var channel = (IMessageChannel) client.GetChannel(client.config.welcomeChannelId);
 
             var greetings = client.config.welcomeMessages;
