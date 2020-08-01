@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
-using Discord.WebSocket;
 
 using TU20Bot.Configuration;
 
@@ -21,8 +20,8 @@ namespace TU20Bot {
         private async Task start() {
             config = new Config();
 
-            server = new Server(config);
             client = new Client(config);
+            server = new Server(client);
             handler = new Handler(client);
 
             await handler.init();

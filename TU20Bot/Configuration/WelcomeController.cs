@@ -4,7 +4,14 @@ using System.Collections.Generic;
 using EmbedIO;
 using EmbedIO.Routing;
 
+using Swan.Formatters;
+
 namespace TU20Bot.Configuration {
+    class WelcomeChannelInput {
+        [JsonProperty("id")]
+        public string id { get; set; }
+    }
+    
     public class WelcomeController : ServerController {
         [Route(HttpVerbs.Get, "/welcome/channel")]
         public string getWelcomeChannel() {
@@ -13,9 +20,9 @@ namespace TU20Bot.Configuration {
 
         [Route(HttpVerbs.Put, "/welcome/channel")]
         public async Task setWelcomeChannel() {
-            var channelId = await HttpContext.GetRequestDataAsync<string>();
+            var input = await HttpContext.GetRequestDataAsync<WelcomeChannelInput>();
 
-            server.config.welcomeChannelId = ulong.Parse(channelId);
+            server.config.welcomeChannelId = ulong.Parse(input.id);
         }
         
         [Route(HttpVerbs.Get, "/welcome/messages")]
