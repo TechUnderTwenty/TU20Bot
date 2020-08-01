@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 using Discord.Commands;
 
-namespace TU20Bot.Command
+namespace TU20Bot.Commands
 {
     public class Ping : ModuleBase<SocketCommandContext>
     {

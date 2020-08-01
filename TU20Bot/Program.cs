@@ -1,16 +1,25 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
 using Discord.WebSocket;
 
+using TU20Bot.Configuration;
+
 namespace TU20Bot {
-    class Program {
+    internal class Program {
         private readonly string token;
 
-        private DiscordSocketClient client;
+        private Server server;
         private Handler handler;
+        private DiscordSocketClient client;
+
+        private void startServer() {
+            server = new Server();
+            server.RunAsync().GetAwaiter().GetResult();
+        }
 
         // Initializes Discord.Net
         private async Task start() {
@@ -22,13 +31,15 @@ namespace TU20Bot {
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
+            new Thread(startServer).Start();
+
             await Task.Delay(-1);
         }
         
         private Program(string token) {
             this.token = token;
         }
-        
+
         // Entry
         public static void Main(string[] args) {
             // Init command with token.
