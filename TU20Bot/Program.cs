@@ -12,18 +12,17 @@ namespace TU20Bot {
     internal class Program {
         private readonly string token;
 
+        private Client client;
+        private Config config;
         private Server server;
         private Handler handler;
-        private DiscordSocketClient client;
-
-        private void startServer() {
-            server = new Server();
-            server.RunAsync().GetAwaiter().GetResult();
-        }
 
         // Initializes Discord.Net
         private async Task start() {
-            client = new DiscordSocketClient();
+            config = new Config();
+
+            server = new Server(config);
+            client = new Client(config);
             handler = new Handler(client);
 
             await handler.init();
@@ -31,7 +30,8 @@ namespace TU20Bot {
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
-            new Thread(startServer).Start();
+            // Run server on another thread.
+            new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
             await Task.Delay(-1);
         }
