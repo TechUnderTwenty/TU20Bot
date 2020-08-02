@@ -2,9 +2,17 @@ using System;
 using System.Collections.Generic;
 
 namespace TU20Bot.Configuration {
-    public class UserJoinInfo {
+    public enum LogEvent {
+        UserJoin,
+        UserLeave,
+    }
+    
+    public class LogEntry {
+        public LogEvent logEvent;
         public ulong id;
-        public DateTimeOffset time;
+        public string name;
+        public ushort discriminator;
+        public DateTime time;
     }
 
     public class Config {
@@ -23,6 +31,6 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
         
-        public List<UserJoinInfo> usersJoined = new List<UserJoinInfo>();
+        public List<LogEntry> logs = new List<LogEntry>();
     }
 }

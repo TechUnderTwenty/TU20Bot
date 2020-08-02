@@ -53,12 +53,27 @@ namespace TU20Bot {
                 }
             }
         }
+
+        private Task userLeft(SocketGuildUser user) {
+            client.config.logs.Add(new LogEntry {
+                logEvent = LogEvent.UserLeave,
+                id = user.Id,
+                name = user.Username,
+                discriminator = user.DiscriminatorValue,
+                time = DateTime.UtcNow
+            });
+
+            return Task.CompletedTask;
+        }
         
         // Called when a user joins the server.
         private async Task userJoined(SocketGuildUser user) {
-            client.config.usersJoined.Add(new UserJoinInfo {
+            client.config.logs.Add(new LogEntry {
+                logEvent = LogEvent.UserJoin,
                 id = user.Id,
-                time = DateTimeOffset.UtcNow // using this over user.JoinedAt, I don't trust it
+                name = user.Username,
+                discriminator = user.DiscriminatorValue,
+                time = DateTime.UtcNow
             });
             
             var channel = (IMessageChannel) client.GetChannel(client.config.welcomeChannelId);
@@ -72,6 +87,7 @@ namespace TU20Bot {
         // Initializes the Message Handler, subscribe to events, etc.
         public async Task init() {
             client.Log += log;
+            client.UserLeft += userLeft;
             client.UserJoined += userJoined;
             client.MessageReceived += messageReceived;
 

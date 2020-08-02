@@ -27,7 +27,8 @@ namespace TU20Bot.Configuration {
                 .WithWebApi("/", e => e
                     .WithController(createFactory<PingController>())
                     .WithController(createFactory<WelcomeController>())
-                    .WithController(createFactory<DiscordController>()));
+                    .WithController(createFactory<DiscordController>())
+                    .WithController(createFactory<LogController>()));
         }
     }
 }

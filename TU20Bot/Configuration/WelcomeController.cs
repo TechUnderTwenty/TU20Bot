@@ -34,31 +34,5 @@ namespace TU20Bot.Configuration {
 
             server.config.welcomeMessages = messages;
         }
-
-        [Route(HttpVerbs.Get, "/welcome/logs")]
-        public IEnumerable<DiscordUserJoinPayload> getWelcomeLogs() {
-            var guild = server.client.GetGuild(server.config.guildId);
-
-            return server.config.usersJoined
-                .OrderBy(x => x.time)
-                .Select(x => {
-                    // rider says i should use pattern matching but i hate it what the heck is going on
-                    if (!(guild.GetUser(x.id) is IGuildUser user)) {
-                        return new DiscordUserJoinPayload {
-                            id = x.id.ToString(),
-                            joinDate = x.time.UtcDateTime,
-                            leftServer = true
-                        };
-                    }
-                    
-                    return new DiscordUserJoinPayload {
-                        id = x.id.ToString(),
-                        joinDate = x.time.UtcDateTime,
-                        username = user.Username,
-                        discriminator = user.DiscriminatorValue,
-                        nickname = user.Nickname
-                    };
-                });
-        }
     }
 }

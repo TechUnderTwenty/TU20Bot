@@ -3,7 +3,10 @@ using System;
 using Swan.Formatters;
 
 namespace TU20Bot.Configuration.Payloads {
-    public class DiscordUserJoinPayload {
+    public class LogEntryPayload {
+        [JsonProperty("type")]
+        public string type { get; set; }
+        
         [JsonProperty("id")]
         public string id { get; set; }
         
@@ -17,8 +20,5 @@ namespace TU20Bot.Configuration.Payloads {
         
         [JsonProperty("joinDate")]
         public DateTime? joinDate { get; set; }
-        
-        [JsonProperty("leftServer")]
-        public bool leftServer { get; set; }
     }
 }
