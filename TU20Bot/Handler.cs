@@ -8,6 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.DependencyInjection;
+using TU20Bot.Configuration;
 
 namespace TU20Bot {
     public class Handler {
@@ -15,18 +16,12 @@ namespace TU20Bot {
         private const char prefix = '-';
         private const bool showStackTrace = true;
 
-        private readonly DiscordSocketClient client;
+        private readonly Client client;
         
         private readonly CommandService commands;
         private readonly ServiceProvider services;
 
-        private string[] greetings = {
-            "Hello there!",
-            "Whats poppin",
-            "Wagwan", "Hi", "AHOY", "Welcome", "Greetings", "Howdy"};
-
-        private Random randomizer = new Random();
-        private readonly ulong generalChatId = 737081385583378447;
+        private readonly Random random = new Random();
 
         // Called by Discord.Net when it wants to log something.
         private static Task log(LogMessage message) {
@@ -35,7 +30,7 @@ namespace TU20Bot {
         }
         
         // Called by Discord.Net when the bot receives a message.
-        private async Task checkMessage(SocketMessage message) {
+        private async Task messageReceived(SocketMessage message) {
             if (!(message is SocketUserMessage userMessage)) return;
 
             var prefixStart = 0;
@@ -59,22 +54,47 @@ namespace TU20Bot {
             }
         }
 
+        private Task userLeft(SocketGuildUser user) {
+            client.config.logs.Add(new LogEntry {
+                logEvent = LogEvent.UserLeave,
+                id = user.Id,
+                name = user.Username,
+                discriminator = user.DiscriminatorValue,
+                time = DateTime.UtcNow
+            });
+
+            return Task.CompletedTask;
+        }
+        
+        // Called when a user joins the server.
+        private async Task userJoined(SocketGuildUser user) {
+            client.config.logs.Add(new LogEntry {
+                logEvent = LogEvent.UserJoin,
+                id = user.Id,
+                name = user.Username,
+                discriminator = user.DiscriminatorValue,
+                time = DateTime.UtcNow
+            });
+            
+            var channel = (IMessageChannel) client.GetChannel(client.config.welcomeChannelId);
+
+            var greetings = client.config.welcomeMessages;
+
+            // Send welcome message.
+            await channel.SendMessageAsync(greetings[random.Next(0, greetings.Count)] + $" <@{user.Id}>");
+        }
+
         // Initializes the Message Handler, subscribe to events, etc.
         public async Task init() {
             client.Log += log;
+            client.UserLeft += userLeft;
             client.UserJoined += userJoined;
-            client.MessageReceived += checkMessage;
+            client.MessageReceived += messageReceived;
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }
 
-        public async Task userJoined(SocketGuildUser user) {
-            var channel = (IMessageChannel) client.GetChannel(generalChatId);
-
-            await channel.SendMessageAsync(greetings[randomizer.Next(0, greetings.Length)] + $" <@{user.Id}>");
-        }
-        
-        public Handler(DiscordSocketClient client) {
+        public Handler(Client client) {
             this.client = client;
             
             commands = new CommandService();
