@@ -5,10 +5,8 @@ using EmbedIO.Routing;
 namespace TU20Bot.Configuration {
     public class CommitController : ServerController {
         [Route(HttpVerbs.Put, "/commit")]
-        public string commitConfig() {
+        public void commitConfig() {
             Config.save(Config.defaultPath, server.config);
-
-            return "Done.";
         }
     }
 }

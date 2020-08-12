@@ -29,7 +29,8 @@ namespace TU20Bot.Configuration {
                     .WithController(createFactory<WelcomeController>())
                     .WithController(createFactory<DiscordController>())
                     .WithController(createFactory<LogController>())
-                    .WithController(createFactory<CommitController>()));
+                    .WithController(createFactory<CommitController>())
+                    .WithController(createFactory<FactoryController>()));
         }
     }
 }
