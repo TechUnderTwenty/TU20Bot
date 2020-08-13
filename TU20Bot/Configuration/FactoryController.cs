@@ -1,8 +1,9 @@
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using Discord;
-
+using Discord.WebSocket;
 using EmbedIO;
 using EmbedIO.Routing;
 
@@ -10,6 +11,18 @@ using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration {
     public class FactoryController : ServerController {
+        [Route(HttpVerbs.Get, "/factory")]
+        public IEnumerable<object> getFactories() {
+            foreach (var factory in server.config.factories) {
+                yield return new {
+                    id = factory.id.ToString(),
+                    name = factory.name,
+                    maxChannels = factory.maxChannels,
+                    channels = factory.channels
+                };
+            }
+        }
+        
         [Route(HttpVerbs.Get, "/factory/{id}")]
         public object getFactory(ulong id) {
             var factory = server.config.factories.First(x => x.id == id);
@@ -17,7 +30,8 @@ namespace TU20Bot.Configuration {
             return new {
                 id = factory.id.ToString(),
                 name = factory.name,
-                maxChannels = factory.maxChannels
+                maxChannels = factory.maxChannels,
+                channels = factory.channels
             };
         }
         
@@ -52,6 +66,16 @@ namespace TU20Bot.Configuration {
         [Route(HttpVerbs.Delete, "/factory/{id}")]
         public void deleteFactory(ulong id) {
             server.config.factories.RemoveAll(x => x.id == id);
+        }
+
+        [Route(HttpVerbs.Put, "/factory/{id}/clean")]
+        public async Task cleanFactory(ulong id) {
+            var factory = server.config.factories.First(x => x.id == id);
+            
+            foreach (var channel in factory.channels)
+                await ((SocketVoiceChannel)server.client.GetChannel(channel)).DeleteAsync();
+            
+            factory.channels.Clear();
         }
     }
 }

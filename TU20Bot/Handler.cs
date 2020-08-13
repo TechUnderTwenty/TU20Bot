@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -76,12 +77,42 @@ namespace TU20Bot {
                 time = DateTime.UtcNow
             });
             
-            var channel = (IMessageChannel) client.GetChannel(client.config.welcomeChannelId);
+            var channel = (IMessageChannel)client.GetChannel(client.config.welcomeChannelId);
 
             var greetings = client.config.welcomeMessages;
 
             // Send welcome message.
-            await channel.SendMessageAsync(greetings[random.Next(0, greetings.Count)] + $" <@{user.Id}>");
+            await channel.SendMessageAsync(
+                greetings[random.Next(0, greetings.Count)] + $" <@{user.Id}>");
+        }
+
+        private async Task voiceUpdated(
+            SocketUser user, SocketVoiceState before, SocketVoiceState after) {
+            var factory = client.config.factories.FirstOrDefault(x => x.id == after.VoiceChannel?.Id);
+
+            if (factory == null)
+                return;
+            
+            var guild = client.GetGuild(after.VoiceChannel.Guild.Id);
+            
+            IVoiceChannel moveTo = null;
+            
+            if (factory.channels.Count < factory.maxChannels) {
+                var channel = await guild.CreateVoiceChannelAsync(
+                    $"{factory.name} {factory.channels.Count + 1}");
+                factory.channels.Add(channel.Id);
+                
+                await channel.ModifyAsync(x => x.CategoryId = after.VoiceChannel.CategoryId);
+
+                moveTo = channel;
+            } else if (factory.channels.Count != 0) {
+                moveTo = guild.GetChannel(factory.channels.Last()) as IVoiceChannel;
+            }
+
+            if (moveTo != null) {
+                await ((SocketGuildUser)user).ModifyAsync(
+                    x => x.Channel = new Optional<IVoiceChannel>(moveTo));
+            }
         }
 
         // Initializes the Message Handler, subscribe to events, etc.
@@ -90,6 +121,7 @@ namespace TU20Bot {
             client.UserLeft += userLeft;
             client.UserJoined += userJoined;
             client.MessageReceived += messageReceived;
+            client.UserVoiceStateUpdated += voiceUpdated;
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }

@@ -19,18 +19,11 @@ namespace TU20Bot.Configuration {
         public DateTime time;
     }
 
-    public class FactoryInstance {
-        public readonly List<ulong> channels = new List<ulong>();
-        
-    }
-
     public class FactoryDescription {
         public ulong id;
         public string name;
         public int maxChannels;
-        
-        [NonSerialized]
-        public FactoryInstance instance = null;
+        public readonly List<ulong> channels = new List<ulong>();
     }
 
     public class Config {
