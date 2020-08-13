@@ -11,14 +11,24 @@ using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration {
     public class FactoryController : ServerController {
+        private object convertChannel(ulong id) {
+            var channel = server.client.GetChannel(id) as IVoiceChannel;
+
+            return new {
+                id = id,
+                name = channel?.Name
+            };
+        }
+        
         [Route(HttpVerbs.Get, "/factory")]
         public IEnumerable<object> getFactories() {
             foreach (var factory in server.config.factories) {
                 yield return new {
                     id = factory.id.ToString(),
                     name = factory.name,
+                    channelName = (server.client.GetChannel(factory.id) as IVoiceChannel)?.Name,
                     maxChannels = factory.maxChannels,
-                    channels = factory.channels
+                    channels = factory.channels.Select(convertChannel)
                 };
             }
         }
@@ -30,8 +40,9 @@ namespace TU20Bot.Configuration {
             return new {
                 id = factory.id.ToString(),
                 name = factory.name,
+                channelName = (server.client.GetChannel(factory.id) as IVoiceChannel)?.Name,
                 maxChannels = factory.maxChannels,
-                channels = factory.channels
+                channels = factory.channels.Select(convertChannel)
             };
         }
         
@@ -71,10 +82,13 @@ namespace TU20Bot.Configuration {
         [Route(HttpVerbs.Put, "/factory/{id}/clean")]
         public async Task cleanFactory(ulong id) {
             var factory = server.config.factories.First(x => x.id == id);
-            
-            foreach (var channel in factory.channels)
-                await ((SocketVoiceChannel)server.client.GetChannel(channel)).DeleteAsync();
-            
+
+            foreach (var voiceChannel in factory.channels
+                .Select(channel => server.client.GetChannel(channel))
+                .OfType<SocketVoiceChannel>()) {
+                await voiceChannel.DeleteAsync();
+            }
+
             factory.channels.Clear();
         }
     }
