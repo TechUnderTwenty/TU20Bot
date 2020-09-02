@@ -36,11 +36,15 @@ namespace TU20Bot.Commands {
 
             StringBuilder errorLog = new StringBuilder("");
             StringBuilder discordMessage = new StringBuilder("");
+
             const int firstNameIndex = 0;
             const int lastNameIndex = 1;
+
             SocketRole role = null;
             if (roleId != null)
                 role = Context.Guild.GetRole((ulong)roleId);
+
+            List<int> indexNotToRead = new List<int>();
 
             foreach (var user in users) {
                 string fullName = user.Nickname ?? user.Username;
@@ -54,6 +58,10 @@ namespace TU20Bot.Commands {
                             errorLog.Append(
                                 $"`{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}` has either " +
                                 $"first or last name that matches with `{fullName}`\n");
+
+                            // Person exists with some name in the server
+                            if (!indexNotToRead.Contains(i))
+                                indexNotToRead.Add(i);
                         }
                     }
 
@@ -81,35 +89,55 @@ namespace TU20Bot.Commands {
                                     await (user as IGuildUser).AddRoleAsync(role);
                                     discordMessage.Append(
                                         $"`{firstName} {lastName}` has been granted role `{role.Name}`\n");
+
+                                    // Person exists in the server
+                                    if (!indexNotToRead.Contains(i))
+                                        indexNotToRead.Add(i);
+
                                     break;
                                 }
 
-                                // For testing purpose
+                                // For testing purposes
                                 discordMessage.Append(
                                     $"`{firstName} {lastName}` full name matched.\n");
+
+                                // Person exists in the server
+                                if (!indexNotToRead.Contains(i))
+                                    indexNotToRead.Add(i);
+
                                 break;
                             }
 
                             // If first name doesn't match
                             errorLog.Append($"`{firstName} {lastName}`'s last name matches " +
                                     $"with `{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}`'s last name.\n");
+
+                            // Person exists with some name in the server
+                            if (!indexNotToRead.Contains(i))
+                                indexNotToRead.Add(i);
                         }
                     }
                 }
             }
 
-
             // For adding all the messages to send to the user
             discordMessage.Append(errorLog);
 
-            // Changing this anyways
-            // For reporting if the user doesn't exist in the server (no last name match)
+            // For creating a list of all the indexes not present in the indexNotToRead List
+            List<int> indexToRead = new List<int>();
+
             for (int i = 0; i < listNames.GetLength(0); i++) {
-                if (!discordMessage.ToString().Contains(listNames[i, lastNameIndex])) {
-                    discordMessage.Append(
-                        $"{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}" +
-                        $" did not have a last name match therefore is not in the server.\n");
-                }
+
+                // For creating a list that has indexes to read from for the not present in server message
+                if (!indexNotToRead.Contains(i))
+                    indexToRead.Add(i);
+            }
+
+            // For reporting if the user doesn't exist in the server (no last name match)
+            for (int i = 0; i < indexToRead.Count; i++) {
+                discordMessage.Append(
+                    $"{listNames[indexToRead[i], firstNameIndex]} {listNames[indexToRead[i], lastNameIndex]}" +
+                    $" did not have a last name match therefore is not in the server.\n");
             }
 
             return discordMessage.ToString();

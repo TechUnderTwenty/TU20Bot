@@ -28,20 +28,24 @@ namespace BotTest {
                 var _token = File.ReadAllText("token.txt").Trim();
                 token = _token.ToString();
             } catch (IOException) {
-                // Directory: BotTest/bin/Debug/netcoreapp3.1
+                // current directory: BotTest/bin/Debug/netcoreapp3.1
                 Console.WriteLine("Could not read from token.txt." +
-                    " Did you put token.txt file in the current working?");
+                    " Did you put token.txt file in the current directory?");
                 Assert.Fail();
             }
+
+            // Initializing all the requored classes
             _config = new Config();
             _client = new Client(_config);
             _handler = new Handler(_client);
 
             await _handler.init();
 
+            // Logging in the bot
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
 
+            // Waiting for the bot to log in and appear online
             bool ready = false;
             _client.Ready += () => {
                 ready = true;
@@ -57,6 +61,8 @@ namespace BotTest {
 
             var guild = _client.GetGuild(_config.guildId);
             var users = guild.Users;
+
+            // Sending a message to a specified channel in a specified server using the algorithm function
             await guild.GetTextChannel(_config.welcomeChannelId)
                 .SendMessageAsync(await _nameMatch.nameMatching(_config.origNames, users, null));
         }
