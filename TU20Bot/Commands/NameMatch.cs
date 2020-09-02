@@ -10,12 +10,6 @@ using TU20Bot.Configuration;
 namespace TU20Bot.Commands {
     public class NameMatch : ModuleBase<SocketCommandContext> {
 
-        /*
-         * replacing substring and index of with split
-         * changing .getLength(0) to sth else in the for loop
-         * inverting the for loop
-         */
-
         // The max limit of chars set by discord
         private const int messageLimit = 2000;
         private Config _config;

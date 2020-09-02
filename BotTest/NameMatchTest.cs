@@ -57,7 +57,7 @@ namespace BotTest {
         }
 
         [TestMethod]
-        public async Task TestMethod1() {
+        public async Task CheckMatchName() {
 
             var guild = _client.GetGuild(_config.guildId);
             var users = guild.Users;
