@@ -30,7 +30,31 @@ namespace TU20Bot.Configuration {
             "Greetings",
             "Howdy"
         };
-        
+
+        public readonly string[,] origNames = {
+            {"Dev","Narula"},
+            {"Timur","Khayrullin"},
+            {"Zaynah","nolastname"},
+            {"Yifan","Wang"},
+            {"Tahmeed","Naser"},
+            {"Shrena","Sribalan"},
+            {"Rick","(O20)"},
+            {"Pranav","Vyas"},
+            {"Karen","Truong"},
+            {"Muhammad Muizz","nolastname"},
+            {"Vince","Li"},
+            {"Alex","Li"},
+            {"nofirstname","Nolan"},
+            {"Borna","Sadeghi"},
+            {"Hargun","nolastname"},
+            {"Markos","Georghiades"},
+            {"Muhammad Muizz","Zafar"},
+            {"Taylor desgroup","Whatley"},
+            {"Viktor fasest","Korolyuk"},
+            {"Denys","Linkov"},
+            {"Muhammad Ali","Syed"},
+        };
+
         public List<LogEntry> logs = new List<LogEntry>();
     }
 }
