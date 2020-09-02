@@ -42,19 +42,18 @@ namespace TU20Bot.Commands {
             if (roleId != null)
                 role = Context.Guild.GetRole((ulong)roleId);
 
-            for (int i = 0; i < listNames.GetLength(0); i++) {
-                foreach (var user in users) {
+            foreach (var user in users) {
+                string fullName = user.Nickname ?? user.Username;
+                int spaceIndex = fullName.LastIndexOf(' ');
 
-                    string fullName = user.Nickname ?? user.Username;
-
-                    int spaceIndex = fullName.LastIndexOf(' ');
+                for (int i = 0; i < listNames.GetLength(0); i++) {
 
                     // If a user doesn't have a first or last name in the server
                     if (spaceIndex <= 0) {
-                        if (compare((listNames[i, firstNameIndex] + listNames[i, lastNameIndex]), fullName)) {
+                        if (compare((listNames[i, firstNameIndex] + listNames[i, lastNameIndex]), fullName, false)) {
                             errorLog.Append(
-                                $" User `{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}` has either " +
-                                $"first or last name which matches with `{fullName}`\n");
+                                $"`{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}` has either " +
+                                $"first or last name that matches with `{fullName}`\n");
                         }
                     }
 
@@ -71,10 +70,10 @@ namespace TU20Bot.Commands {
                         string lastName = fullName.Substring(spaceIndex + 1);
 
                         // Checking if the last names match
-                        if (compare(listNames[i, lastNameIndex], lastName)) {
+                        if (compare(listNames[i, lastNameIndex], lastName, true)) {
 
                             // Checking if the first names match
-                            if (compare(listNames[i, firstNameIndex], firstName)) {
+                            if (compare(listNames[i, firstNameIndex], firstName, false)) {
 
                                 // Assigning user a role specified in the command
                                 if (role != null) {
@@ -85,19 +84,20 @@ namespace TU20Bot.Commands {
                                     break;
                                 }
 
+                                // For testing purpose
                                 discordMessage.Append(
                                     $"`{firstName} {lastName}` full name matched.\n");
                                 break;
                             }
 
                             // If first name doesn't match
-                            errorLog.Append($"`{lastName}` of `{firstName} {lastName}` matches " +
-                                    $"with `{listNames[i, lastNameIndex]}` of `{listNames[i, firstNameIndex]}" +
-                                    $" {listNames[i, lastNameIndex]}`\n");
+                            errorLog.Append($"`{firstName} {lastName}`'s last name matches " +
+                                    $"with `{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}`'s last name.\n");
                         }
                     }
                 }
             }
+
 
             // For adding all the messages to send to the user
             discordMessage.Append(errorLog);
@@ -108,7 +108,7 @@ namespace TU20Bot.Commands {
                 if (!discordMessage.ToString().Contains(listNames[i, lastNameIndex])) {
                     discordMessage.Append(
                         $"{listNames[i, firstNameIndex]} {listNames[i, lastNameIndex]}" +
-                        $" did not have a last name match therefore is not in the server\n");
+                        $" did not have a last name match therefore is not in the server.\n");
                 }
             }
 
@@ -116,7 +116,17 @@ namespace TU20Bot.Commands {
         }
 
 
-        private bool compare(string name, string matchName) {
+        private bool compare(string name, string matchName, bool fullMatch) {
+            // For last name since last name should be exactly the same
+            if (fullMatch) {
+                if (name.Replace(" ", "").Equals(matchName.Replace(" ", "")) ||
+                matchName.Replace(" ", "").Equals(name.Replace(" ", ""))) {
+                    return true;
+                }
+                return false;
+            }
+
+            // For first name since first name can be differnt from the one provided
             if (name.Replace(" ", "").Contains(matchName.Replace(" ", "")) ||
                 matchName.Replace(" ", "").Contains(name.Replace(" ", ""))) {
                 return true;
