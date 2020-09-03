@@ -16,14 +16,12 @@ namespace TU20Bot.Configuration {
         }
 
         public void checkForEmail() {
-            Console.WriteLine(Config.userEmailId.Count);
             for (int i = 0; i < Config.userEmailId.Count; i++) {
                 if (config.emails.Contains(Config.userEmailId.ElementAt(i).Value)) {
-                    // grant that specific user a role
                     ulong userId = Config.userEmailId.ElementAt(i).Key;
                     var user = client.GetUser(userId);
                     Console.WriteLine($"{user} email verified from list");
-                    // remove that specific index from the dictionary
+                    // Remove that specific index from the dictionary since the user has been verified
                     Config.userEmailId.Remove(userId);
                 }
             }            
