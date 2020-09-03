@@ -68,7 +68,7 @@ namespace TU20Bot.Configuration {
             "johndoe@nothingmail.com",
         };
 
-        public Dictionary<ulong, string> userEmailId = new Dictionary<ulong, string>();
+        public static Dictionary<ulong, string> userEmailId = new Dictionary<ulong, string>();
 
         public List<LogEntry> logs = new List<LogEntry>();
     }

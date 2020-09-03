@@ -37,7 +37,7 @@ namespace TU20Bot {
             new Thread(new ThreadStart(() => {
                 // Keep the thread running forever
                 do {
-                    new EmailChecker().checkForEmail();
+                    new EmailChecker(config, client).checkForEmail();
                 } while (true);
             })).Start();
 

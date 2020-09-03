@@ -34,7 +34,7 @@ namespace TU20Bot.Commands {
             }
 
             // Since the email didn't match, adding user to the dictionary
-            _config.userEmailId.Add(Context.User.Id, email);
+            Config.userEmailId.Add(Context.User.Id, email);
             return null;
         }
 

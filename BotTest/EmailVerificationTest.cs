@@ -41,7 +41,7 @@ namespace BotTest {
             _client = new Client(_config);
             _handler = new Handler(_client);
             _emailVerification = new EmailVerification();
-            _emailChecker = new EmailChecker();
+            _emailChecker = new EmailChecker(_config, _client);
 
             await _handler.init();
 

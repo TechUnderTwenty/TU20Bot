@@ -10,21 +10,21 @@ namespace TU20Bot.Configuration {
         private Config config;
         private Client client;
 
-        public EmailChecker() {
-            config = new Config();
-            client = new Client(config);
+        public EmailChecker(Config config, Client client) {
+            this.config = config;
+            this.client = client;
         }
 
         public void checkForEmail() {
-            Console.WriteLine(config.userEmailId.Count);
-            for (int i = 0; i < config.userEmailId.Count; i++) {
-                if (config.emails.Contains(config.userEmailId.ElementAt(i).Value)) {
+            Console.WriteLine(Config.userEmailId.Count);
+            for (int i = 0; i < Config.userEmailId.Count; i++) {
+                if (config.emails.Contains(Config.userEmailId.ElementAt(i).Value)) {
                     // grant that specific user a role
-                    ulong userId = config.userEmailId.ElementAt(i).Key;
+                    ulong userId = Config.userEmailId.ElementAt(i).Key;
                     var user = client.GetUser(userId);
                     Console.WriteLine($"{user} email verified from list");
                     // remove that specific index from the dictionary
-                    config.userEmailId.Remove(userId);
+                    Config.userEmailId.Remove(userId);
                 }
             }            
         }
