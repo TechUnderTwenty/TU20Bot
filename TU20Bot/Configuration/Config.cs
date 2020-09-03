@@ -55,6 +55,21 @@ namespace TU20Bot.Configuration {
             {"Muhammad Ali","Syed"},
         };
 
+        public List<string> emails = new List<string>{
+            "johndoe@tu20.com",
+            "johndoe@yahoo.com",
+            "johndoe@outlook.com",
+            "johndoe@gmail.com",
+            "johndoe@hubspot.com",
+            "johndoe@pepipost.com",
+            "johndoe@zohomail.com",
+            "johndoe@aolmail.com",
+            "johndoe@pleasekillme.com",
+            "johndoe@nothingmail.com",
+        };
+
+        public Dictionary<ulong, string> userEmailId = new Dictionary<ulong, string>();
+
         public List<LogEntry> logs = new List<LogEntry>();
     }
 }

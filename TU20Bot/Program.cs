@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,16 +26,24 @@ namespace TU20Bot {
             handler = new Handler(client);
 
             await handler.init();
-            
+
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
             // Run server on another thread.
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
+            // Run email checker on another thread
+            new Thread(new ThreadStart(() => {
+                // Keep the thread running forever
+                do {
+                    new EmailChecker().checkForEmail();
+                } while (true);
+            })).Start();
+
             await Task.Delay(-1);
         }
-        
+
         private Program(string token) {
             this.token = token;
         }
@@ -45,7 +54,7 @@ namespace TU20Bot {
             if (args.Length >= 2 && args[0] == "init") {
                 File.WriteAllText("token.txt", args[1]);
             }
-            
+
             // Start bot with token from "token.txt" in working folder.
             try {
                 var token = File.ReadAllText("token.txt").Trim();
