@@ -3,7 +3,7 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 
-using Swan.Formatters;
+using System.Timers;
 
 namespace TU20Bot.Configuration {
     public enum LogEvent {
@@ -24,6 +24,9 @@ namespace TU20Bot.Configuration {
         public string name;
         public int maxChannels;
         public readonly List<ulong> channels = new List<ulong>();
+        
+        [XmlIgnore]
+        public Timer timer;
     }
 
     public class Config {

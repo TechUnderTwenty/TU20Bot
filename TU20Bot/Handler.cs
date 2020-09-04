@@ -1,7 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Timers;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
@@ -23,6 +24,36 @@ namespace TU20Bot {
         private readonly ServiceProvider services;
 
         private readonly Random random = new Random();
+
+        private async Task checkFactory(FactoryDescription factory) {
+            var inUse = false;
+
+            foreach (var channelId in factory.channels) {
+                var channel = (IVoiceChannel)client.GetChannel(channelId);
+                if (channel == null)
+                    continue;
+                
+                var users = channel.GetUsersAsync();
+                if (!await users.AnyAsync(user => user.Count != 0))
+                    continue;
+                
+                inUse = true;
+                break;
+            }
+
+            if (!inUse) {
+                factory.timer.Stop();
+                factory.timer = null;
+                
+                foreach (var voiceChannel in factory.channels
+                    .Select(channel => client.GetChannel(channel))
+                    .OfType<SocketVoiceChannel>()) {
+                    await voiceChannel.DeleteAsync();
+                }
+
+                factory.channels.Clear();
+            }
+        }
 
         // Called by Discord.Net when it wants to log something.
         private static Task log(LogMessage message) {
@@ -98,15 +129,27 @@ namespace TU20Bot {
             IVoiceChannel moveTo = null;
             
             if (factory.channels.Count < factory.maxChannels) {
+                const double timeoutTime = 1000 * 60;
+                
                 var channel = await guild.CreateVoiceChannelAsync(
                     $"{factory.name} {factory.channels.Count + 1}");
                 factory.channels.Add(channel.Id);
-                
+
+                if (factory.timer == null) {
+                    factory.timer = new System.Timers.Timer(timeoutTime);
+                    factory.timer.Elapsed += (sender, args) => {
+                        checkFactory(factory).RunSynchronously();
+                    };
+                    factory.timer.AutoReset = true;
+                    factory.timer.Start();
+                }
+
                 await channel.ModifyAsync(x => x.CategoryId = after.VoiceChannel.CategoryId);
 
                 moveTo = channel;
             } else if (factory.channels.Count != 0) {
-                moveTo = guild.GetChannel(factory.channels.Last()) as IVoiceChannel;
+                moveTo = guild.GetChannel(
+                    factory.channels[random.Next(factory.channels.Count)]) as IVoiceChannel;
             }
 
             if (moveTo != null) {
