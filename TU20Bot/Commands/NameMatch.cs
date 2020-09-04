@@ -185,7 +185,7 @@ namespace TU20Bot.Commands
             // For last name since last name should be exactly the same
             if (fullMatch)
             {
-                return name.Replace(" ", "").Equals(matchName.Replace(" ", "")) || matchName.Replace(" ", "").Equals(name.Replace(" ", ""));
+                return name.Replace(" ", "") == matchName.Replace(" ", "");
             }
 
             // For first name since first name can be differnt from the one provided
