@@ -7,11 +7,9 @@ using TU20Bot;
 using TU20Bot.Commands;
 using TU20Bot.Configuration;
 
-namespace BotTest
-{
+namespace BotTest {
     [TestClass]
-    public class NameMatchTest
-    {
+    public class NameMatchTest {
 
         private static NameMatch _nameMatch;
         private static Config _config;
@@ -21,20 +19,15 @@ namespace BotTest
         private const bool OUTPUT_TO_DISCORD = false;
 
         [ClassInitialize]
-        public static async Task ClassInitialize(TestContext testContext)
-        {
+        public static async Task ClassInitialize(TestContext testContext) {
 
             string token = "";
-            testContext.WriteLine("Iteration 1");
 
             // Start bot with token from "token.txt" in working folder.
-            try
-            {
+            try {
                 var _token = File.ReadAllText("../../../../token.txt").Trim();
                 token = _token.ToString();
-            }
-            catch (IOException)
-            {
+            } catch (IOException) {
                 // current directory: BotTest/bin/Debug/netcoreapp3.1
                 Console.WriteLine("Could not read from token.txt." +
                     " Did you put token.txt file in the current directory?");
@@ -56,13 +49,11 @@ namespace BotTest
         }
 
         [TestMethod]
-        public async Task CheckMatchName()
-        {
+        public async Task CheckMatchName() {
 
             // Waiting for the bot to log in and appear online
             bool ready = false;
-            _client.Ready += () =>
-            {
+            _client.Ready += () => {
                 ready = true;
                 return Task.CompletedTask;
             };
@@ -74,74 +65,42 @@ namespace BotTest
             //Sending a message to a specified channel in a specified server using the algorithm function
             var stringResponse = await _nameMatch.nameMatching(_config.origNames, users, null);
 
-            // TODO: Add thourough checks to verify the algorithm is working as intended
+            // TODO: Add thorough checks to verify the algorithm is working as intended
 
             if (OUTPUT_TO_DISCORD)
                 await guild.GetTextChannel(_config.welcomeChannelId).SendMessageAsync(stringResponse);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_FullMatch()
-        {
+        public void TestMatchNameAlgorithm_FullMatch() {
             string[,] nameSet = { { "John", "Doe" } };
-            NameMatch.nameMatchAlg("John Doe", nameSet, (index) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            });
+            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+            Assert.AreEqual(response.level, NameMatch.MatchLevel.CompleteMatch);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_LastNameMatch()
-        {
+        public void TestMatchNameAlgorithm_LastNameMatch() {
             string[,] nameSet = { { "Bill", "Doe" } };
-            NameMatch.nameMatchAlg("John Doe", nameSet, (index) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-            });
+            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+            Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
+            Assert.IsTrue(response.lastNameMatch.Count == 1);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_NoMatch()
-        {
+        public void TestMatchNameAlgorithm_NoSpaceMatch() {
+            string[,] nameSet = { { "John", "Doe" } };
+            var response = NameMatch.nameMatchAlg("JohnDoe", nameSet);
+            Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
+            Assert.IsTrue(response.noSpacesMatch.Count == 1);
+        }
+
+        [TestMethod]
+        public void TestMatchNameAlgorithm_NoMatch() {
             string[,] nameSet = { { "Bill", "Johnson" } };
-            NameMatch.nameMatchAlg("John Doe", nameSet, (index) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            });
+            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+            Assert.AreEqual(response.level, NameMatch.MatchLevel.NoMatch);
         }
 
-        [TestMethod]
-        public void TestMatchNameAlgorithm_NoSpaceMatch()
-        {
-            string[,] nameSet = { { "John", "Johnson" } };
-            NameMatch.nameMatchAlg("JohnDoe", nameSet, (index) =>
-            {
-                //Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            }, (index, firstName, lastName) =>
-            {
-                Assert.Fail();
-            });
-        }
     }
 
 
