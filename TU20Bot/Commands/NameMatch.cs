@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Org.BouncyCastle.Math.EC.Rfc7748;
 using TU20Bot.Configuration;
 
 namespace TU20Bot.Commands {
@@ -40,10 +41,10 @@ namespace TU20Bot.Commands {
 
             _config = ((Client)Context.Client).config;
 
-            await sendSplitMessage(await nameMatching(_config.origNames, users, roleId), "\n");
+            await sendSplitMessage(await nameMatching(_config.userDataCsv, users, roleId), "\n");
         }
 
-        public async Task<string> nameMatching(string[,] listNames, IReadOnlyCollection<SocketGuildUser> users, ulong? roleId) {
+        public async Task<string> nameMatching(List<CSVData> csvlistNames, IReadOnlyCollection<SocketGuildUser> users, ulong? roleId) {
 
             var errorLog = new StringBuilder("");
             var discordMessage = new StringBuilder("");
@@ -57,7 +58,7 @@ namespace TU20Bot.Commands {
 
             foreach (var user in users) {
                 var fullName = user.Nickname ?? user.Username;
-                var match = nameMatchAlg(fullName, listNames);
+                var match = nameMatchAlg(fullName, csvlistNames);
 
                 match.user = user;
                 results.Add(match);
@@ -115,7 +116,7 @@ namespace TU20Bot.Commands {
         /// <param name="firstOrLastMatch">Executed when there is no space in fullname, however either the first or last name match</param>
         /// <param name="succesfulMatch">Executed when there is a complete match, that is both first name and last name match</param>
         /// <param name="lastNameMatch">Executed when only the last name matches </param>
-        public static MatchResult nameMatchAlg(string fullName, string[,] listNames) {
+        public static MatchResult nameMatchAlg(string fullName, List<CSVData> csvlistNames) {
             MatchResult matchResult = new MatchResult() {
                 fullName = fullName,
                 level = MatchLevel.CloseMatch,
@@ -125,11 +126,11 @@ namespace TU20Bot.Commands {
 
             int spaceIndex = fullName.LastIndexOf(' ');
 
-            for (int i = 0; i < listNames.GetLength(0); i++) {
+            foreach(var userName in csvlistNames) {
                 // If a user doesn't have a first or last name in the server
                 if (spaceIndex <= 0) {
-                    if (compare((listNames[i, firstNameIndex] + listNames[i, lastNameIndex]), fullName, false))
-                        matchResult.noSpacesMatch.Add(listNames[i, firstNameIndex] + listNames[i, lastNameIndex]);
+                    if (compare(userName.FirstName + userName.LastName, fullName, false))
+                        matchResult.noSpacesMatch.Add(userName.FirstName + userName.LastName);
                 }
 
                 /*
@@ -145,14 +146,14 @@ namespace TU20Bot.Commands {
                     string lastName = fullName.Substring(spaceIndex + 1);
 
                     // Checking if the last names match
-                    if (compare(listNames[i, lastNameIndex], lastName, true)) {
+                    if (compare(userName.LastName, lastName, true)) {
                         // Checking if the first names match
-                        if (compare(listNames[i, firstNameIndex], firstName, false)) {
+                        if (compare(userName.FirstName, firstName, false)) {
                             matchResult.level = MatchLevel.CompleteMatch;
                             return matchResult;
                         }
 
-                        matchResult.lastNameMatch.Add(listNames[i, firstNameIndex] + " " + listNames[i, lastNameIndex]);
+                        matchResult.lastNameMatch.Add(userName.FirstName + " " + userName.LastName);
                     }
                 }
             }

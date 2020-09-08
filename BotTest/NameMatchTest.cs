@@ -1,6 +1,7 @@
 using Discord;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using TU20Bot;
@@ -15,6 +16,7 @@ namespace BotTest {
         private static Config _config;
         private static Client _client;
         private static Handler _handler;
+        private static CSVReader _csvReader;
 
         private const bool OUTPUT_TO_DISCORD = false;
 
@@ -38,8 +40,11 @@ namespace BotTest {
             _config = new Config();
             _client = new Client(_config);
             _handler = new Handler(_client);
+            _csvReader = new CSVReader(_config);
 
             await _handler.init();
+
+            _config.userDataCsv = _csvReader.readFile();
 
             // Logging in the bot
             await _client.LoginAsync(TokenType.Bot, token);
@@ -63,7 +68,7 @@ namespace BotTest {
             var users = guild.Users;
 
             //Sending a message to a specified channel in a specified server using the algorithm function
-            var stringResponse = await _nameMatch.nameMatching(_config.origNames, users, null);
+            var stringResponse = await _nameMatch.nameMatching(_config.userDataCsv, users, null);
 
             // TODO: Add thorough checks to verify the algorithm is working as intended
 
@@ -73,14 +78,20 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_FullMatch() {
-            string[,] nameSet = { { "John", "Doe" } };
+            // string[,] nameSet = { { "John", "Doe" } };
+            List<CSVData> nameSet = new List<CSVData>{
+            new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
+            };
             var response = NameMatch.nameMatchAlg("John Doe", nameSet);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CompleteMatch);
         }
 
         [TestMethod]
         public void TestMatchNameAlgorithm_LastNameMatch() {
-            string[,] nameSet = { { "Bill", "Doe" } };
+            // string[,] nameSet = { { "Bill", "Doe" } };
+            List<CSVData> nameSet = new List<CSVData>{
+            new CSVData { FirstName = "Bill", LastName = "Doe", Email = "johndoe@tu20.com" },
+            };
             var response = NameMatch.nameMatchAlg("John Doe", nameSet);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
             Assert.IsTrue(response.lastNameMatch.Count == 1);
@@ -88,16 +99,22 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_NoSpaceMatch() {
-            string[,] nameSet = { { "John", "Doe" } };
-            var response = NameMatch.nameMatchAlg("JohnDoe", nameSet);
+            // string[,] nameSet = { { "John", "Doe" } };
+            List<CSVData> nameSet = new List<CSVData>{
+            new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
+            };
+            var response = NameMatch.nameMatchAlg("JohnDoe", _config.userDataCsv);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
             Assert.IsTrue(response.noSpacesMatch.Count == 1);
         }
 
         [TestMethod]
         public void TestMatchNameAlgorithm_NoMatch() {
-            string[,] nameSet = { { "Bill", "Johnson" } };
-            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+            // string[,] nameSet = { { "Bill", "Johnson" } };
+            List<CSVData> nameSet = new List<CSVData>{
+            new CSVData { FirstName = "Bill", LastName = "Johnson", Email = "johndoe@tu20.com" },
+            };
+            var response = NameMatch.nameMatchAlg("John Doe", _config.userDataCsv);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.NoMatch);
         }
 

@@ -17,7 +17,7 @@ namespace TU20Bot.Configuration {
 
         public void checkForEmail() {
             for (int i = 0; i < config.userEmailId.Count; i++) {
-                if (config.emails.Contains(config.userEmailId.ElementAt(i).Value)) {
+                if (config.userDataCsv.Any(x => x.Email.Equals(config.userEmailId.ElementAt(i).Value))) {
                     ulong userId = config.userEmailId.ElementAt(i).Key;
                     var user = client.GetUser(userId);
                     Console.WriteLine($"{user} email verified from list");

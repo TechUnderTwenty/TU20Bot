@@ -31,7 +31,7 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
 
-        public readonly string[,] origNames = {
+        public readonly string[,] _ueorigNames = {
             {"Dev","Narula"},
             {"Timur","Khayrullin"},
             {"Zaynah","nolastname"},
@@ -55,7 +55,7 @@ namespace TU20Bot.Configuration {
             {"Muhammad Ali","Syed"},
         };
 
-        public List<string> emails = new List<string>{
+        public List<string> _ueemails = new List<string>{
             "johndoe@tu20.com",
             "johndoe@yahoo.com",
             "johndoe@outlook.com",
@@ -67,6 +67,8 @@ namespace TU20Bot.Configuration {
             "johndoe@pleasekillme.com",
             "johndoe@nothingmail.com",
         };
+
+        public List<CSVData> userDataCsv;
 
         public Dictionary<ulong, string> userEmailId = new Dictionary<ulong, string>();
 

@@ -8,6 +8,9 @@ using TU20Bot.Commands;
 using TU20Bot.Configuration;
 using Discord;
 using System.Linq;
+using System.Collections.Generic;
+using CsvHelper;
+using System.Globalization;
 
 namespace BotTest {
     [TestClass]
@@ -17,7 +20,9 @@ namespace BotTest {
         private static EmailChecker _emailChecker;
         private static Config _config;
         private static Client _client;
-        // private static Handler _handler;
+        private static CSVReader _csvReader;
+
+        private readonly string path = "ExpoData.csv";
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext testContext) {
@@ -37,11 +42,13 @@ namespace BotTest {
             // Initializing all the requored classes
             _config = new Config();
             _client = new Client(_config);
-            // _handler = new Handler(_client);
+
             _emailVerification = new EmailVerification();
             _emailChecker = new EmailChecker(_config, _client);
 
-            // await _handler.init();
+            _csvReader = new CSVReader(_config);
+
+            _config.userDataCsv = _csvReader.readFile();
 
             // Logging in the bot
             await _client.LoginAsync(TokenType.Bot, token);
@@ -60,21 +67,32 @@ namespace BotTest {
 
         [TestMethod]
         public void CheckCompareMethod() {
-            bool emailExists = _emailVerification.emailCompare("johndoe@tu20.com", _config.emails);
+            bool emailExists = _emailVerification.emailCompare("johndoe@tu20.com", _config.userDataCsv);
             Assert.IsTrue(emailExists);
-            bool emailNotInList = _emailVerification.emailCompare("johndoe@nothing.com", _config.emails);
+            bool emailNotInList = _emailVerification.emailCompare("johndoe@nothing.com", _config.userDataCsv);
             Assert.IsFalse(emailNotInList);
         }
 
         [TestMethod]
         public void CheckNotInListEmail() {
             // Running the method with an email not in the list 
-            bool emailNotInList = _emailVerification.emailCompare("johndoe@examplemail.com", _config.emails);
+            bool emailNotInList = _emailVerification.emailCompare("johndoe@examplemail.com", _config.userDataCsv);
             Assert.IsFalse(emailNotInList);
 
-            // Adding the same unavailable email to the list and dictionary
+            // Adding the same unavailable email to the csv file and dictionary
             _emailVerification.saveUnverifiedEmail(_config.userEmailId, 1, "johndoe@examplemail.com");
-            _config.emails.Add("johndoe@examplemail.com");
+
+            var records = new List<CSVData> {
+                new CSVData { FirstName = "john1", LastName = "Doe1", Email = "johndoe@tu20.com" },
+                new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com" },
+            };
+
+            using (var writer = new StreamWriter(path))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+                csv.WriteRecords(records);
+            }
+            // reading the updated data again from the csv file
+            _config.userDataCsv = _csvReader.readFile();
 
             // Checking to see if the email is present in the list
             // This will be run on separate thread when program is running

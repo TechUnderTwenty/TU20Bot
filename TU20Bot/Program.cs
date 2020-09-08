@@ -16,6 +16,7 @@ namespace TU20Bot {
         private Config config;
         private Server server;
         private Handler handler;
+        private CSVReader csvReader;
 
         // Initializes Discord.Net
         private async Task start() {
@@ -24,6 +25,8 @@ namespace TU20Bot {
             client = new Client(config);
             server = new Server(client);
             handler = new Handler(client);
+
+            csvReader = new CSVReader(config);
 
             await handler.init();
 
@@ -37,6 +40,10 @@ namespace TU20Bot {
             new Thread(new ThreadStart(() => {
                 // Keep the thread running forever
                 do {
+                    // Reading and assigning data from csv file
+                    config.userDataCsv = csvReader.readFile();
+                    // config.userDataCsv.ForEach(x => config.firstNameCsv.Add(x.FirstName));
+
                     new EmailChecker(config, client).checkForEmail();
                     Thread.Sleep(1800000);
                 } while (true);

@@ -15,7 +15,7 @@ namespace TU20Bot.Commands {
             // Change dictionary such that it doesn't give an error with the same key
             Config config = ((Client)Context.Client).config;
 
-            bool result = emailCompare(email, config.emails);
+            bool result = emailCompare(email, config.userDataCsv);
 
             if (result)
                 await ReplyAsync("Email verified");
@@ -25,10 +25,10 @@ namespace TU20Bot.Commands {
             }
         }
 
-        public bool emailCompare(string email, List<string> emailList) {
+        public bool emailCompare(string email, List<CSVData> csvEmailList) {
 
-            for (int i = 0; i < emailList.Count; i++) {
-                if (email.Equals(emailList[i]))
+            foreach(var userEmail in csvEmailList) {
+                if (email.Equals(userEmail.Email))
                     return true;
             }
             return false;
