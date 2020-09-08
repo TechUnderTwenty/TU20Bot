@@ -22,4 +22,11 @@
    <ItemGroup>
       <ProjectReference Include="..\TU20Bot\TU20Bot.csproj" />
     </ItemGroup>
+     
+     <ItemGroup>
+      <None Include="..\token.txt">
+        <Link>token.txt</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>
