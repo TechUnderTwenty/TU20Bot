@@ -100,7 +100,7 @@ namespace BotTest {
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
             };
-            var response = NameMatch.nameMatchAlg("JohnDoe", _config.userDataCsv);
+            var response = NameMatch.nameMatchAlg("JohnDoe", nameSet);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
             Assert.IsTrue(response.noSpacesMatch.Count == 1);
         }
@@ -110,7 +110,7 @@ namespace BotTest {
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "Bill", LastName = "Johnson", Email = "johndoe@tu20.com" },
             };
-            var response = NameMatch.nameMatchAlg("John Doe", _config.userDataCsv);
+            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
             Assert.AreEqual(response.level, NameMatch.MatchLevel.NoMatch);
         }
 
