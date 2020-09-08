@@ -48,8 +48,6 @@ namespace BotTest {
 
             _csvReader = new CSVReader(_config);
 
-            _config.userDataCsv = _csvReader.readFile();
-
             // Logging in the bot
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
@@ -67,36 +65,29 @@ namespace BotTest {
 
         [TestMethod]
         public void CheckCompareMethod() {
-            bool emailExists = _emailVerification.emailCompare("johndoe@tu20.com", _config.userDataCsv);
+            var records = new List<CSVData> {
+                new CSVData { FirstName = "john1", LastName = "Doe1", Email = "johndoe@tu20.com" },
+            };
+            bool emailExists = _emailVerification.emailCompare("johndoe@tu20.com", records);
             Assert.IsTrue(emailExists);
-            bool emailNotInList = _emailVerification.emailCompare("johndoe@nothing.com", _config.userDataCsv);
+            bool emailNotInList = _emailVerification.emailCompare("johndoe@nothing.com", records);
             Assert.IsFalse(emailNotInList);
         }
 
         [TestMethod]
         public void CheckNotInListEmail() {
+            var records = new List<CSVData> {};
             // Running the method with an email not in the list 
-            bool emailNotInList = _emailVerification.emailCompare("johndoe@examplemail.com", _config.userDataCsv);
+            bool emailNotInList = _emailVerification.emailCompare("johndoe@examplemail.com", records);
             Assert.IsFalse(emailNotInList);
 
             // Adding the same unavailable email to the csv file and dictionary
             _emailVerification.saveUnverifiedEmail(_config.userEmailId, 1, "johndoe@examplemail.com");
-
-            var records = new List<CSVData> {
-                new CSVData { FirstName = "john1", LastName = "Doe1", Email = "johndoe@tu20.com" },
-                new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com" },
-            };
-
-            using (var writer = new StreamWriter(path))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
-                csv.WriteRecords(records);
-            }
-            // reading the updated data again from the csv file
-            _config.userDataCsv = _csvReader.readFile();
+            records.Add(new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com" });
 
             // Checking to see if the email is present in the list
             // This will be run on separate thread when program is running
-            _emailChecker.checkForEmail();
+            _emailChecker.checkForEmail(records);
 
             // If the function is working properly, it will remove the element which can be verified
             Assert.AreEqual(0, _config.userEmailId.Count);

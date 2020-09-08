@@ -78,7 +78,6 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_FullMatch() {
-            // string[,] nameSet = { { "John", "Doe" } };
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
             };
@@ -88,7 +87,6 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_LastNameMatch() {
-            // string[,] nameSet = { { "Bill", "Doe" } };
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "Bill", LastName = "Doe", Email = "johndoe@tu20.com" },
             };
@@ -99,7 +97,6 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_NoSpaceMatch() {
-            // string[,] nameSet = { { "John", "Doe" } };
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
             };
@@ -110,7 +107,6 @@ namespace BotTest {
 
         [TestMethod]
         public void TestMatchNameAlgorithm_NoMatch() {
-            // string[,] nameSet = { { "Bill", "Johnson" } };
             List<CSVData> nameSet = new List<CSVData>{
             new CSVData { FirstName = "Bill", LastName = "Johnson", Email = "johndoe@tu20.com" },
             };

@@ -38,14 +38,14 @@ namespace TU20Bot {
 
             // Run email checker on another thread every 15 min
             new Thread(new ThreadStart(() => {
-                // Keep the thread running forever
+
                 do {
                     // Reading and assigning data from csv file
                     config.userDataCsv = csvReader.readFile();
-                    // config.userDataCsv.ForEach(x => config.firstNameCsv.Add(x.FirstName));
 
-                    new EmailChecker(config, client).checkForEmail();
+                    new EmailChecker(config, client).checkForEmail(config.userDataCsv);
                     Thread.Sleep(1800000);
+
                 } while (true);
             })).Start();
 
