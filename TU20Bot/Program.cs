@@ -33,11 +33,12 @@ namespace TU20Bot {
             // Run server on another thread.
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
-            // Run email checker on another thread
+            // Run email checker on another thread every 15 min
             new Thread(new ThreadStart(() => {
                 // Keep the thread running forever
                 do {
                     new EmailChecker(config, client).checkForEmail();
+                    Thread.Sleep(1800000);
                 } while (true);
             })).Start();
 

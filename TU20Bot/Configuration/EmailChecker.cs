@@ -16,13 +16,13 @@ namespace TU20Bot.Configuration {
         }
 
         public void checkForEmail() {
-            for (int i = 0; i < Config.userEmailId.Count; i++) {
-                if (config.emails.Contains(Config.userEmailId.ElementAt(i).Value)) {
-                    ulong userId = Config.userEmailId.ElementAt(i).Key;
+            for (int i = 0; i < config.userEmailId.Count; i++) {
+                if (config.emails.Contains(config.userEmailId.ElementAt(i).Value)) {
+                    ulong userId = config.userEmailId.ElementAt(i).Key;
                     var user = client.GetUser(userId);
                     Console.WriteLine($"{user} email verified from list");
                     // Remove that specific index from the dictionary since the user has been verified
-                    Config.userEmailId.Remove(userId);
+                    config.userEmailId.Remove(userId);
                 }
             }            
         }

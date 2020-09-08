@@ -38,7 +38,7 @@ namespace TU20Bot.Commands {
 
             var users = Context.Guild.Users;
 
-            _config = new Config();
+            _config = ((Client)Context.Client).config;
 
             await sendSplitMessage(await nameMatching(_config.origNames, users, roleId), "\n");
         }

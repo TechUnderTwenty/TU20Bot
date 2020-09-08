@@ -9,28 +9,36 @@ using TU20Bot.Configuration;
 namespace TU20Bot.Commands {
     public class EmailVerification : ModuleBase<SocketCommandContext> {
 
-        private Config config = new Config();
-
         [Command("verify")]
         public async Task EmailVerify(string email) {
 
-            string result = emailCompare(email, Context.User.Id);
+            // Change dictionary such that it doesn't give an error with the same key
+            Config config = ((Client)Context.Client).config;
 
-            if (result != null)
-                await ReplyAsync(result);
-            else
+            bool result = emailCompare(email, config.emails);
+
+            if (result)
+                await ReplyAsync("Email verified");
+            else {
+                saveUnverifiedEmail(config.userEmailId, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
-        }
-
-        public string emailCompare(string email, ulong userId) {
-            for (int i = 0; i < config.emails.Count; i++) {
-                if (email.Equals(config.emails[i]))
-                    return "Email verified";
             }
-
-            // Since the email didn't match, adding user to the dictionary
-            Config.userEmailId.Add(userId, email);
-            return null;
         }
+
+        public bool emailCompare(string email, List<string> emailList) {
+
+            for (int i = 0; i < emailList.Count; i++) {
+                if (email.Equals(emailList[i]))
+                    return true;
+            }
+            return false;
+        }
+
+        public void saveUnverifiedEmail(Dictionary<ulong, string> emailIdStore, ulong id, string email) {
+            if(!emailIdStore.ContainsKey(id))
+                emailIdStore.Add(id, email);
+        }
+
+
     }
 }
