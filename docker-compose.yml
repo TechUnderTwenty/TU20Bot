@@ -1,0 +1,6 @@
+version: '2.0'
+services:
+  tu20bot:
+    build: .
+    ports:
+      - 3000:3000    
