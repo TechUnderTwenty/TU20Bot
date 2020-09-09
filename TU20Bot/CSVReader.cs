@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,7 @@ namespace TU20Bot {
     public class CSVReader {
 
         private Config config;
-        private readonly string csvFilePath = "ExpoData.csv";
+        private readonly string csvFilePath = "Data/ExpoData.csv";
 
         public CSVReader(Config config) {
             this.config = config;
@@ -20,7 +21,9 @@ namespace TU20Bot {
         public List<CSVData> readFile() {
 
             using var reader = new StreamReader(csvFilePath);
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) {
+                TrimOptions = TrimOptions.Trim
+            });
             // var results = csv.GetRecords<CSVData>().ToList();
             // foreach (var result in results) {
             // Console.WriteLine(result.FirstName);

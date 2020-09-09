@@ -22,8 +22,6 @@ namespace BotTest {
         private static Client _client;
         private static CSVReader _csvReader;
 
-        private readonly string path = "ExpoData.csv";
-
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext testContext) {
 
