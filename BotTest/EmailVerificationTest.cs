@@ -20,44 +20,16 @@ namespace BotTest {
         private static EmailChecker _emailChecker;
         private static Config _config;
         private static Client _client;
-        private static CSVReader _csvReader;
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext testContext) {
 
-            string token = "";
-
-            // Start bot with token from "token.txt" in working folder.
-            try {
-                token = File.ReadAllText("token.txt").Trim();
-            } catch (IOException) {
-                // current directory: BotTest/bin/Debug/netcoreapp3.1
-                Console.WriteLine("Could not read from token.txt." +
-                                  " Did you put token.txt file in the current directory?");
-                Assert.Fail();
-            }
-
-            // Initializing all the requored classes
+            // Initializing all the required classes
             _config = new Config();
             _client = new Client(_config);
 
             _emailVerification = new EmailVerification();
             _emailChecker = new EmailChecker(_config, _client);
-
-            _csvReader = new CSVReader(_config);
-
-            // Logging in the bot
-            await _client.LoginAsync(TokenType.Bot, token);
-            await _client.StartAsync();
-
-            // Waiting for the bot to log in and appear online
-            bool ready = false;
-            _client.Ready += () => {
-                ready = true;
-                return Task.CompletedTask;
-            };
-            while (!ready)
-                ;
         }
 
 
@@ -74,7 +46,7 @@ namespace BotTest {
 
         [TestMethod]
         public void CheckNotInListEmail() {
-            var records = new List<CSVData> {};
+            var records = new List<CSVData> { };
             // Running the method with an email not in the list 
             bool emailNotInList = _emailVerification.emailCompare("johndoe@examplemail.com", records);
             Assert.IsFalse(emailNotInList);

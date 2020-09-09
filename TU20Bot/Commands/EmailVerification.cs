@@ -26,16 +26,11 @@ namespace TU20Bot.Commands {
         }
 
         public bool emailCompare(string email, List<CSVData> csvEmailList) {
-
-            foreach(var userEmail in csvEmailList) {
-                if (email.Equals(userEmail.Email))
-                    return true;
-            }
-            return false;
+            return csvEmailList.Exists(e => e.Email == email);
         }
 
         public void saveUnverifiedEmail(Dictionary<ulong, string> emailIdStore, ulong id, string email) {
-            if(!emailIdStore.ContainsKey(id))
+            if (!emailIdStore.ContainsKey(id))
                 emailIdStore.Add(id, email);
         }
 

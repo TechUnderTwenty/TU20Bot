@@ -15,12 +15,19 @@ namespace TU20Bot.Configuration {
             this.client = client;
         }
 
+        // Method running a separate thread and mathcing any unverified email to the email list in csv
         public void checkForEmail(List<CSVData> csvEmail) {
             for (int i = 0; i < config.userEmailId.Count; i++) {
+                
+                // Comparing all emails in the csv email list with unverified emails in dictionary
                 if (csvEmail.Any(x => x.Email.Equals(config.userEmailId.ElementAt(i).Value))) {
+
+                    // If some unverified email matches the email from the csv list,
+                    // Get the user id of user associated with that email and inform by printing to console
                     ulong userId = config.userEmailId.ElementAt(i).Key;
                     var user = client.GetUser(userId);
                     Console.WriteLine($"{user} email verified from list");
+                    
                     // Remove that specific index from the dictionary since the user has been verified
                     config.userEmailId.Remove(userId);
                 }
