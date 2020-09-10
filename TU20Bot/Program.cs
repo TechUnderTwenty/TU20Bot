@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
-
+using Org.BouncyCastle.Math.EC.Rfc7748;
 using TU20Bot.Configuration;
 
 namespace TU20Bot {
@@ -37,14 +37,14 @@ namespace TU20Bot {
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
             // Run email checker on another thread every 15 min
-            new Thread(new ThreadStart(() => {
+            new Thread(new ThreadStart(async () => {
 
                 do {
-                    // Reading and assigning data from csv file
+                    // Reading and assigning data from csv file every 15 min
                     config.userDataCsv = csvReader.readFile();
 
-                    new EmailChecker(config, client).checkForEmail(config.userDataCsv);
-                    Thread.Sleep(1800000);
+                    await new EmailChecker(config, client).checkForEmail(config.userDataCsv);
+                    await Task.Delay(1800000);
 
                 } while (true);
             })).Start();

@@ -6,7 +6,7 @@ namespace TU20Bot.Configuration {
         UserJoin,
         UserLeave,
     }
-    
+
     public class LogEntry {
         public LogEvent logEvent;
         public ulong id;
@@ -17,9 +17,9 @@ namespace TU20Bot.Configuration {
 
     public class Config {
         public ulong guildId = 230737273350520834; // TU20
-        
+
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
-        
+
         public List<string> welcomeMessages = new List<string> {
             "Hello there!",
             "Whats poppin",
@@ -67,6 +67,10 @@ namespace TU20Bot.Configuration {
             "johndoe@pleasekillme.com",
             "johndoe@nothingmail.com",
         };
+
+        public readonly ulong speakerRoleID = 753311645585113258;
+
+        public readonly ulong attendeeRoleID = 753311315623411764;
 
         public List<CSVData> userDataCsv;
 

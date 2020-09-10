@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Discord;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,22 +17,39 @@ namespace TU20Bot.Configuration {
         }
 
         // Method running a separate thread and mathcing any unverified email to the email list in csv
-        public void checkForEmail(List<CSVData> csvEmail) {
+        public async Task checkForEmail(List<CSVData> csvEmail) {
+
             for (int i = 0; i < config.userEmailId.Count; i++) {
-                
-                // Comparing all emails in the csv email list with unverified emails in dictionary
-                if (csvEmail.Any(x => x.Email.Equals(config.userEmailId.ElementAt(i).Value))) {
+
+                // Comparing all emails in the newly obtained csv list with unverified emails
+                foreach (var botUser in csvEmail) {
 
                     // If some unverified email matches the email from the csv list,
-                    // Get the user id of user associated with that email and inform by printing to console
-                    ulong userId = config.userEmailId.ElementAt(i).Key;
-                    var user = client.GetUser(userId);
-                    Console.WriteLine($"{user} email verified from list");
-                    
-                    // Remove that specific index from the dictionary since the user has been verified
-                    config.userEmailId.Remove(userId);
+                    if (botUser.Email.Equals(config.userEmailId.ElementAt(i).Value)) {
+
+                        // Get the user id of user associated with that email
+                        ulong userId = config.userEmailId.ElementAt(i).Key;
+                        var user = client.GetUser(userId);
+
+                        // If the email is of a speaker then asign the speaker role
+                        if (botUser.isSpeaker) {
+                            var roleSpeaker = client.GetGuild(config.guildId).GetRole(config.speakerRoleID);
+                            await(user as IGuildUser).AddRoleAsync(roleSpeaker);
+                        }
+                        
+                        // If the email is not of a speaker then assign an attendee role
+                        var roleAttendee = client.GetGuild(config.guildId).GetRole(config.attendeeRoleID);
+                        await(user as IGuildUser).AddRoleAsync(roleAttendee);
+
+                        // Inform the user by printing to console
+                        Console.WriteLine($"{user} email verified from list");
+
+                        // Remove that specific index from the dictionary since the user has been verified
+                        config.userEmailId.Remove(userId);
+                    }
+
                 }
-            }            
+            }
         }
     }
 }

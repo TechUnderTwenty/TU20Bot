@@ -27,8 +27,7 @@ namespace BotTest {
 
             // Start bot with token from "token.txt" in working folder.
             try {
-                var _token = File.ReadAllText("token.txt").Trim();
-                token = _token.ToString();
+                token = File.ReadAllText("token.txt").Trim();
             } catch (IOException) {
                 // current directory: BotTest/bin/Debug/netcoreapp3.1
                 Console.WriteLine("Could not read from token.txt." +

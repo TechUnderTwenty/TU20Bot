@@ -24,10 +24,8 @@ namespace TU20Bot {
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) {
                 TrimOptions = TrimOptions.Trim
             });
-            // var results = csv.GetRecords<CSVData>().ToList();
-            // foreach (var result in results) {
-            // Console.WriteLine(result.FirstName);
-            // }
+            var records = csv.GetRecords<CSVData>();
+            
             return csv.GetRecords<CSVData>().ToList();
 
         }

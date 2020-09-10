@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,18 +16,39 @@ namespace TU20Bot.Commands {
             // Change dictionary such that it doesn't give an error with the same key
             Config config = ((Client)Context.Client).config;
 
-            bool result = emailCompare(email, config.userDataCsv);
+            bool result = await emailCompare(email, config.userDataCsv, config);
 
-            if (result)
+            if (result) {
                 await ReplyAsync("Email verified");
-            else {
+            } else {
                 saveUnverifiedEmail(config.userEmailId, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
             }
         }
 
-        public bool emailCompare(string email, List<CSVData> csvEmailList) {
-            return csvEmailList.Exists(e => e.Email == email);
+        public async Task<bool> emailCompare(string email, List<CSVData> csvEmailList, Config config) {
+
+            foreach (var botUser in csvEmailList) {
+
+                // If both of the emails match
+                if (botUser.Email.Equals(email)) {
+
+                    // If the email in the list if of a speaker asign the speaker role
+                    if (botUser.isSpeaker) {
+                        var roleSpeaker = Context.Guild.GetRole(config.speakerRoleID);
+                        await (Context.User as IGuildUser).AddRoleAsync(roleSpeaker);
+                        return true;
+                    }
+
+                    // If it is not of the speaker assign the attendee role
+                    var roleAttendee = Context.Guild.GetRole(config.attendeeRoleID);
+                    await (Context.User as IGuildUser).AddRoleAsync(roleAttendee);
+                    return true;
+                }
+            }
+
+            // If there's nothing in the list or the list doesn't have user email
+            return false;
         }
 
         public void saveUnverifiedEmail(Dictionary<ulong, string> emailIdStore, ulong id, string email) {

@@ -16,9 +16,6 @@ namespace TU20Bot.Commands {
         private const int messageLimit = 2000;
         private Config _config;
 
-        private const int firstNameIndex = 0;
-        private const int lastNameIndex = 1;
-
         public enum MatchLevel {
             NoMatch,
             CloseMatch,
