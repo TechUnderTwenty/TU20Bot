@@ -43,7 +43,7 @@ namespace TU20Bot {
                     // Reading and assigning data from csv file every 15 min
                     config.userDataCsv = csvReader.readFile();
 
-                    await new EmailChecker(config, client).checkForEmail(config.userDataCsv);
+                    await new EmailChecker(config, client).emailCheck(config.userDataCsv);
                     await Task.Delay(1800000);
 
                 } while (true);

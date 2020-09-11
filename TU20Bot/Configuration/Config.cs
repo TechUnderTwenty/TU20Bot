@@ -31,43 +31,6 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
 
-        public readonly string[,] _ueorigNames = {
-            {"Dev","Narula"},
-            {"Timur","Khayrullin"},
-            {"Zaynah","nolastname"},
-            {"Yifan","Wang"},
-            {"Tahmeed","Naser"},
-            {"Shrena","Sribalan"},
-            {"Rick","(O20)"},
-            {"Pranav","Vyas"},
-            {"Karen","Truong"},
-            {"Muhammad Muizz","nolastname"},
-            {"Vince","Li"},
-            {"Alex","Li"},
-            {"nofirstname","Nolan"},
-            {"Borna","Sadeghi"},
-            {"Hargun","nolastname"},
-            {"Markos","Georghiades"},
-            {"Muhammad Muizz","Zafar"},
-            {"Taylor desgroup","Whatley"},
-            {"Viktor fasest","Korolyuk"},
-            {"Denys","Linkov"},
-            {"Muhammad Ali","Syed"},
-        };
-
-        public List<string> _ueemails = new List<string>{
-            "johndoe@tu20.com",
-            "johndoe@yahoo.com",
-            "johndoe@outlook.com",
-            "johndoe@gmail.com",
-            "johndoe@hubspot.com",
-            "johndoe@pepipost.com",
-            "johndoe@zohomail.com",
-            "johndoe@aolmail.com",
-            "johndoe@pleasekillme.com",
-            "johndoe@nothingmail.com",
-        };
-
         public readonly ulong speakerRoleID = 753311645585113258;
 
         public readonly ulong attendeeRoleID = 753311315623411764;

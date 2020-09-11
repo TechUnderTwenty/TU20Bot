@@ -22,19 +22,7 @@ namespace BotTest {
         private static Client _client;
 
         [ClassInitialize]
-        public static async Task ClassInitialize(TestContext testContext) {
-
-            string token = "";
-
-            // Start bot with token from "token.txt" in working folder.
-            try {
-                token = File.ReadAllText("token.txt").Trim();
-            } catch (IOException) {
-                // current directory: BotTest/bin/Debug/netcoreapp3.1
-                Console.WriteLine("Could not read from token.txt." +
-                    " Did you put token.txt file in the current directory?");
-                Assert.Fail();
-            }
+        public static void ClassInitialize(TestContext testContext) {
 
             // Initializing all the required classes
             _config = new Config();
@@ -42,41 +30,36 @@ namespace BotTest {
 
             _emailVerification = new EmailVerification();
             _emailChecker = new EmailChecker(_config, _client);
-
-            // Logging in the bot
-            await _client.LoginAsync(TokenType.Bot, token);
-            await _client.StartAsync();
         }
 
 
         [TestMethod]
-        public async Task CheckCompareMethod() {
+        public void CheckCompareMethod() {
             var records = new List<CSVData> {
                 new CSVData { FirstName = "john1", LastName = "Doe1", Email = "johndoe@tu20.com", isSpeaker = true },
             };
-            bool emailExists = await _emailVerification.emailCompare("johndoe@tu20.com", records, _config);
-            Assert.IsTrue(emailExists);
-            bool emailNotInList = await _emailVerification.emailCompare("johndoe@nothing.com", records, _config);
-            Assert.IsFalse(emailNotInList);
+
+            Assert.IsNotNull(_emailVerification.emailCompare("johndoe@tu20.com", records));
+
+            Assert.IsNull(_emailVerification.emailCompare("johndoe@nothing.com", records));
         }
 
         [TestMethod]
-        public async Task CheckNotInListEmail() {
+        public void CheckNotInListEmail() {
             var records = new List<CSVData> { };
             // Running the method with an email not in the list 
-            bool emailNotInList = await _emailVerification.emailCompare("johndoe@examplemail.com", records, _config);
-            Assert.IsFalse(emailNotInList);
+            Assert.IsNull(_emailVerification.emailCompare("johndoe@examplemail.com", records));
 
             // Adding the same unavailable email to the csv file and dictionary
             _emailVerification.saveUnverifiedEmail(_config.userEmailId, 1, "johndoe@examplemail.com");
-            records.Add(new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com" });
+            records.Add(new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com", isSpeaker = true });
 
             // Checking to see if the email is present in the list
             // This will be run on separate thread when program is running
-            await _emailChecker.checkForEmail(records);
+            var result = _emailChecker.checkEmailInCsvList(records);
 
-            // If the function is working properly, it will remove the element which can be verified
-            Assert.AreEqual(0, _config.userEmailId.Count);
+            // If the function is working properly, it will return the persons info
+            Assert.IsNotNull(result.userData);
         }
     }
 }

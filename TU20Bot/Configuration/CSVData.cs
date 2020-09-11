@@ -1,11 +1,4 @@
-﻿using CsvHelper.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static TU20Bot.Configuration.CSVData;
-using CsvHelper.TypeConversion;
-using CsvHelper;
-using CsvHelper.Configuration.Attributes;
+﻿using CsvHelper.Configuration.Attributes;
 
 namespace TU20Bot.Configuration {
 
