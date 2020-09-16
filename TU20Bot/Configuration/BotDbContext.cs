@@ -9,7 +9,7 @@ namespace TU20Bot.Configuration {
         public DbSet<UnverifiedUser> unverifiedUsers { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-            optionsBuilder.UseNpgsql("Server=127.0.0.1;Port=5432;Database=discordbot;User Id=passportdev;Password=strawhatluffy;");
+            optionsBuilder.UseNpgsql("Server=127.0.0.1;Port=5432;Database=discordbot;User Id=passportdev;Password=<pswd>;");
         }
 
 
