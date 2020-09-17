@@ -37,8 +37,6 @@ namespace TU20Bot.Configuration {
 
         public List<CSVData> userDataCsv;
 
-        public Dictionary<ulong, string> userEmailId = new Dictionary<ulong, string>();
-
         public List<LogEntry> logs = new List<LogEntry>();
     }
 }
