@@ -23,7 +23,7 @@ namespace TU20Bot.Commands {
                 await ReplyAsync("Email verified");
                 await assignRole(result, config);
             } else {
-                saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
+                await saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
             }
         }
@@ -57,8 +57,8 @@ namespace TU20Bot.Commands {
 
 
 
-        public void saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
-            commUnverifiedUser.addUserInfo(id, email);
+        public async Task saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
+            await commUnverifiedUser.addUserInfo(id, email);
         }
 
 

@@ -15,12 +15,12 @@ namespace TU20Bot.Configuration {
         }
 
         // Adds the info given in the parameters to the db
-        public void addUserInfo(ulong userId, string email) {
-            db.unverifiedUsers.AddAsync(new UnverifiedUser {
+        public async Task addUserInfo(ulong userId, string email) {
+            await db.unverifiedUsers.AddAsync(new UnverifiedUser {
                 UserId = userId,
                 Email = email,
             });
-            db.SaveChangesAsync();
+           await db.SaveChangesAsync();
         }
 
         // Returns a list of all the users stored in the db

@@ -20,6 +20,7 @@ namespace BotTest {
         private static EmailChecker _emailChecker;
         private static Config _config;
         private static Client _client;
+        private static DbCommUnverifiedUser _dbComm;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext) {
@@ -28,8 +29,9 @@ namespace BotTest {
             _config = new Config();
             _client = new Client(_config);
 
+            _dbComm = new DbCommUnverifiedUser(new BotDbContext());
             _emailVerification = new EmailVerification();
-            _emailChecker = new EmailChecker(_config, _client);
+            _emailChecker = new EmailChecker(_config, _client, _dbComm);
         }
 
 
@@ -45,13 +47,13 @@ namespace BotTest {
         }
 
         [TestMethod]
-        public void CheckNotInListEmail() {
+        public async Task CheckNotInListEmail() {
             var records = new List<CSVData> { };
             // Running the method with an email not in the list 
             Assert.IsNull(_emailVerification.emailCompare("johndoe@examplemail.com", records));
 
             // Adding the same unavailable email to the csv file and dictionary
-            _emailVerification.saveUnverifiedEmail(_config.userEmailId, 1, "johndoe@examplemail.com");
+            await _emailVerification.saveUnverifiedEmail(_dbComm, 1, "johndoe@examplemail.com");
             records.Add(new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com", isSpeaker = true });
 
             // Checking to see if the email is present in the list
