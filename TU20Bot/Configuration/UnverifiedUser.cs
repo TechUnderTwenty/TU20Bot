@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace TU20Bot.Configuration {
-    class UnverifiedUser {
+    public class UnverifiedUser {
         
         public int Id { get; set; }
 

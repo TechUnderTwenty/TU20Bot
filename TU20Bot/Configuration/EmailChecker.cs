@@ -10,10 +10,12 @@ namespace TU20Bot.Configuration {
 
         private Config config;
         private Client client;
+        private DbCommUnverifiedUser dbComm;
 
-        public EmailChecker(Config config, Client client) {
+        public EmailChecker(Config config, Client client, DbCommUnverifiedUser dbComm) {
             this.config = config;
             this.client = client;
+            this.dbComm = dbComm;
         }
 
 
@@ -32,19 +34,21 @@ namespace TU20Bot.Configuration {
         // Method comparing and returing the CSVData and ulong of the user who's email have been verified
         public (ulong userId, CSVData userData) checkEmailInCsvList(List<CSVData> csvData) {
 
-            for (int i = 0; i < config.userEmailId.Count; i++) {
+            var unverifiedUserList = dbComm.getUserList();
+
+            foreach (var unverifiedUser in unverifiedUserList) {
 
                 // Comparing all emails in the newly obtained csv list with unverified emails
                 foreach (var botUser in csvData) {
 
                     // If some unverified email matches the email from the csv list,
-                    if (botUser.Email.Equals(config.userEmailId.ElementAt(i).Value)) {
+                    if (botUser.Email.Equals(unverifiedUser.Email)) {
 
                         // Get the user id of user associated with that email
-                        ulong Id = config.userEmailId.ElementAt(i).Key;
+                        ulong Id = unverifiedUser.UserId;
 
                         // Remove that specific index from the dictionary since the user has been verified
-                        config.userEmailId.Remove(Id);
+                        dbComm.removeUserInfo(unverifiedUser);
 
                         return (userId: Id, userData: botUser);
                     }
@@ -57,7 +61,7 @@ namespace TU20Bot.Configuration {
 
         public async Task assignRole((ulong userId, CSVData userData) userInfo) {
 
-            var user = client.GetUser(userInfo.userId);
+            var user = client.GetGuild(config.guildId).GetUser(userInfo.userId);
 
             // If the email is of a speaker then asign the speaker role
             if (userInfo.userData.isSpeaker) {

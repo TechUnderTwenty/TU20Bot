@@ -17,6 +17,7 @@ namespace TU20Bot {
         private Server server;
         private Handler handler;
         private CSVReader csvReader;
+        private DbCommUnverifiedUser dbCommUnverifiedUser;
 
         // Initializes Discord.Net
         private async Task start() {
@@ -26,6 +27,7 @@ namespace TU20Bot {
             server = new Server(client);
             handler = new Handler(client);
 
+            dbCommUnverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
             csvReader = new CSVReader(config);
 
             await handler.init();
@@ -43,7 +45,7 @@ namespace TU20Bot {
                     // Reading and assigning data from csv file every 15 min
                     config.userDataCsv = csvReader.readFile();
 
-                    await new EmailChecker(config, client).emailCheck(config.userDataCsv);
+                    await new EmailChecker(config, client, dbCommUnverifiedUser).emailCheck(config.userDataCsv);
                     await Task.Delay(1800000);
 
                 } while (true);
@@ -70,6 +72,8 @@ namespace TU20Bot {
             } catch (IOException) {
                 Console.WriteLine("Could not read from token.txt. Did you run `init <token>`?");
             }
+
+
         }
     }
 }

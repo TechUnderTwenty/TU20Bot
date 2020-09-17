@@ -15,6 +15,7 @@ namespace TU20Bot.Commands {
 
             // Change dictionary such that it doesn't give an error with the same key
             Config config = ((Client)Context.Client).config;
+            DbCommUnverifiedUser unverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
 
             CSVData result = emailCompare(email, config.userDataCsv);
 
@@ -22,7 +23,7 @@ namespace TU20Bot.Commands {
                 await ReplyAsync("Email verified");
                 await assignRole(result, config);
             } else {
-                saveUnverifiedEmail(config.userEmailId, Context.User.Id, email);
+                saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
             }
         }
@@ -56,9 +57,8 @@ namespace TU20Bot.Commands {
 
 
 
-        public void saveUnverifiedEmail(Dictionary<ulong, string> emailIdStore, ulong id, string email) {
-            if (!emailIdStore.ContainsKey(id))
-                emailIdStore.Add(id, email);
+        public void saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
+            commUnverifiedUser.addUserInfo(id, email);
         }
 
 

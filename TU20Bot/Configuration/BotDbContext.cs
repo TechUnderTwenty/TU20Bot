@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace TU20Bot.Configuration {
-    class BotDbContext : DbContext {
+    public class BotDbContext : DbContext {
 
         public DbSet<UnverifiedUser> unverifiedUsers { get; set; }
 
