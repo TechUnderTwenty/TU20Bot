@@ -25,6 +25,8 @@ namespace TU20Bot {
 
         private readonly Random random = new Random();
 
+        // Checks the state of a factory; if it's currently unused, all the voice channels are removed
+        // Triggered by a factory timer
         private async Task checkFactory(FactoryDescription factory) {
             var inUse = false;
 
@@ -41,6 +43,7 @@ namespace TU20Bot {
                 break;
             }
 
+            // If all channels are currently not in use, remove all of them
             if (!inUse) {
                 factory.timer.Stop();
                 factory.timer = null;
@@ -131,10 +134,13 @@ namespace TU20Bot {
             if (factory.channels.Count < factory.maxChannels) {
                 const double timeoutTime = 1000 * 60;
                 
+                // Create a voice channel in the format of: "name count"
                 var channel = await guild.CreateVoiceChannelAsync(
                     $"{factory.name} {factory.channels.Count + 1}");
                 factory.channels.Add(channel.Id);
 
+                // If no timer exists, create one.
+                // For an existing factory the timer will be set to null when all voice channels are no longer in use
                 if (factory.timer == null) {
                     factory.timer = new System.Timers.Timer(timeoutTime);
                     factory.timer.Elapsed += (sender, args) => {
