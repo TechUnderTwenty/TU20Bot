@@ -18,7 +18,7 @@ namespace TU20Bot {
 
         // Initializes Discord.Net
         private async Task start() {
-            config = new Config();
+            config = Config.load(Config.defaultPath) ?? new Config();
 
             client = new Client(config);
             server = new Server(client);
