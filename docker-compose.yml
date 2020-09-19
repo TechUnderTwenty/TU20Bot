@@ -1,6 +1,29 @@
-version: '2.0'
+version: '3.0'
+
+volumes:
+  database-data:
+
 services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: passportdev
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: discordbot
+    volumes:
+      - database-data:/var/lib/postgresql/data
+
   tu20bot:
     build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      ISCONTAINER: "TRUE"
+
+  config:
+    image: tu20bot_config
     ports:
-      - 3000:3000    
+      - 8080:8080
+    depends_on:
+      - tu20bot

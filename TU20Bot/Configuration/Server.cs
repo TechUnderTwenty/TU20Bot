@@ -6,6 +6,7 @@ namespace TU20Bot.Configuration {
     public class Server : WebServer {
         private const string hostIp = "http://127.0.0.1";
         private const string hostLocal = "http://localhost";
+        private const string allSources = "http://+";
         private const int port = 3000;
 
         public readonly Client client;
@@ -16,8 +17,7 @@ namespace TU20Bot.Configuration {
         }
 
         public Server(Client client) : base(e => e
-            .WithUrlPrefix($"{hostIp}:{port}") // helps with vue dev server integration
-            .WithUrlPrefix($"{hostLocal}:{port}")
+            .WithUrlPrefix($"{allSources}:{port}")
             .WithMode(HttpListenerMode.EmbedIO)) {
             this.client = client;
             config = client.config;
