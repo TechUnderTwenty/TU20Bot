@@ -19,10 +19,10 @@ namespace TU20Bot.Configuration {
         }
         
         [Route(HttpVerbs.Get, "/discord/server")]
-        public DiscordServerPayload getServer() {
+        public object getServer() {
             var guild = server.client.GetGuild(server.config.guildId);
 
-            return new DiscordServerPayload {
+            return new {
                 id = guild.Id.ToString(),
                 name = guild.Name,
                 icon = guild.IconUrl
@@ -30,7 +30,7 @@ namespace TU20Bot.Configuration {
         }
         
         [Route(HttpVerbs.Get, "/discord/channels")]
-        public IEnumerable<DiscordChannelPayload> getChannels([QueryField] string type) {
+        public IEnumerable<object> getChannels([QueryField] string type) {
             // Not going to risk enum recognition.
             var textOnly = type == "text";
             var audioOnly = type == "audio";
@@ -39,7 +39,7 @@ namespace TU20Bot.Configuration {
 
             var y = guild.Channels
                 .Where(x => (!textOnly || x is ITextChannel) && (!audioOnly || x is IAudioChannel))
-                .Select(x => new DiscordChannelPayload { id = x.Id.ToString(), name = x.Name });
+                .Select(x => new { id = x.Id.ToString(), name = x.Name });
 
             return y;
         }

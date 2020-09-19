@@ -62,12 +62,12 @@ namespace TU20Bot.Configuration {
         }
         
         [Route(HttpVerbs.Get, "/logs")]
-        public IEnumerable<LogEntryPayload> getLogs() {
+        public IEnumerable<object> getLogs() {
             var guild = server.client.GetGuild(server.config.guildId);
 
             return server.config.logs
                 .OrderBy(x => x.time)
-                .Select(x => new LogEntryPayload {
+                .Select(x => new {
                     type = x.logEvent switch {
                         LogEvent.UserJoin => "join",
                         LogEvent.UserLeave => "leave",
