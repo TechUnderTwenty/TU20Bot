@@ -1,0 +1,33 @@
+# This compose file is used with "docker-compose -f setup.yml run admin".
+# It is used as an administrative tool to connect to the database
+
+version: '3.0'
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  database-data:
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: passportdev
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: discordbot
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    networks:
+      internal:
+  
+  # Used for quick administration
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    networks:
+      internal:
+    depends_on: 
+      - db
