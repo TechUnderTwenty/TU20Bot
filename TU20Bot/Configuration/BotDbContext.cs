@@ -12,7 +12,5 @@ namespace TU20Bot.Configuration {
             var server = Environment.GetEnvironmentVariable("ISCONTAINER") == "TRUE" ? "db" : "127.0.0.1";
             optionsBuilder.UseNpgsql($"Server={server};Port=5432;Database=discordbot;User Id=passportdev;Password=test;");
         }
-
-
     }
 }

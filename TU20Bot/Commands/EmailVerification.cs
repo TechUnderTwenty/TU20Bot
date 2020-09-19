@@ -1,9 +1,5 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
+﻿using Discord.Commands;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TU20Bot.Configuration;
 
@@ -42,25 +38,23 @@ namespace TU20Bot.Commands {
             return null;
         }
 
-
         public async Task assignRole(CSVData userData, Config config) {
+            var guild = Context.Client.GetGuild(config.guildId);
+            var user = guild.GetUser(Context.User.Id);
+
             // If the email in the list if of a speaker asign the speaker role
             if (userData.isSpeaker) {
-                var roleSpeaker = Context.Guild.GetRole(config.speakerRoleID);
-                await (Context.User as IGuildUser).AddRoleAsync(roleSpeaker);
+                var roleSpeaker = guild.GetRole(config.speakerRoleID);
+                await user.AddRoleAsync(roleSpeaker);
             }
 
             // If it is not of the speaker assign the attendee role
-            var roleAttendee = Context.Guild.GetRole(config.attendeeRoleID);
-            await (Context.User as IGuildUser).AddRoleAsync(roleAttendee);
+            var roleAttendee = guild.GetRole(config.attendeeRoleID);
+            await user.AddRoleAsync(roleAttendee);
         }
-
-
 
         public async Task saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
             await commUnverifiedUser.addUserInfo(id, email);
         }
-
-
     }
 }
