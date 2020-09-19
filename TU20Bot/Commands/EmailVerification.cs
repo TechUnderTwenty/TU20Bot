@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TU20Bot.Configuration;
@@ -22,6 +23,10 @@ namespace TU20Bot.Commands {
                 await saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
             }
+
+            // If the message was not sent in a private (direct message) channel, remove it
+            if (!(Context.Message.Channel is IPrivateChannel))
+                await Context.Message.DeleteAsync();
         }
 
         public CSVData emailCompare(string email, List<CSVData> csvEmailList) {
