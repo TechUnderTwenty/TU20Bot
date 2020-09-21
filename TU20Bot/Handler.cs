@@ -164,6 +164,51 @@ namespace TU20Bot {
             }
         }
 
+        private enum ModifyRoleOp {
+            Add,
+            Remove
+        }
+
+        private async Task modifyRole(ulong messageId,
+            ISocketMessageChannel channel, SocketReaction reaction, ModifyRoleOp op) {
+            var reactor = client.config.reactors.FirstOrDefault(x => x.id == messageId);
+            
+            // Must be in a guild to assign roles, must has a user attributed to reaction, must have matched a reactor
+            if (!reaction.User.IsSpecified
+                || !(reaction.User.Value is IGuildUser)
+                || !(channel is IGuildChannel)
+                || reactor == null)
+                return;
+
+            // Search to see if the reactor has a role defined for this emoticon
+            var name = reactor.pairs.FirstOrDefault(x => x.emote == reaction.Emote.Name);
+            if (name == null)
+                return;
+
+            var role = ((IGuildChannel)channel).Guild.GetRole(name.roleId);
+
+            switch (op) {
+                case ModifyRoleOp.Add:
+                    await ((IGuildUser)reaction.User.Value).AddRoleAsync(role);
+                    break;
+                case ModifyRoleOp.Remove:
+                    await ((IGuildUser)reaction.User.Value).RemoveRoleAsync(role);
+                    break;
+                default:
+                    return;
+            }
+        }
+
+        private async Task reactionAdded(Cacheable<IUserMessage, ulong> message,
+            ISocketMessageChannel channel, SocketReaction reaction) {
+            await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Add);
+        }
+        
+        private async Task reactionRemove(Cacheable<IUserMessage, ulong> message,
+            ISocketMessageChannel channel, SocketReaction reaction) {
+            await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Remove);
+        }
+
         // Initializes the Message Handler, subscribe to events, etc.
         public async Task init() {
             client.Log += log;
@@ -171,6 +216,8 @@ namespace TU20Bot {
             client.UserJoined += userJoined;
             client.MessageReceived += messageReceived;
             client.UserVoiceStateUpdated += voiceUpdated;
+            client.ReactionAdded += reactionAdded;
+            client.ReactionRemoved += reactionRemove;
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }
