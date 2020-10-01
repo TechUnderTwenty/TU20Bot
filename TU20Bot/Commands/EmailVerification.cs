@@ -1,24 +1,38 @@
-﻿using Discord;
-using Discord.Commands;
-using System.Collections.Generic;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
+using Discord;
+using Discord.Commands;
+using Microsoft.EntityFrameworkCore.Internal;
 using TU20Bot.Configuration;
+using TU20Bot.Configuration.Payloads;
+
+using TU20Bot.Database;
 
 namespace TU20Bot.Commands {
+    public class EmailCompareResult {
+        public UserMatchPayload match;
+        public UserDetailsPayload detail;
+    }
+    
     public class EmailVerification : ModuleBase<SocketCommandContext> {
-
         [Command("verify")]
-        public async Task EmailVerify(string email) {
-
+        public async Task emailVerify(string email) {
             // Change dictionary such that it doesn't give an error with the same key
-            Config config = ((Client)Context.Client).config;
-            DbCommUnverifiedUser unverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
+            var config = ((Client)Context.Client).config;
+            var unverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
 
-            CSVData result = emailCompare(email, config.userDataCsv);
+            var result = compareEmail(email, config.matches);
 
-            if (result != null) {
+            if (result.detail != null) {
                 await ReplyAsync("Email verified");
-                await assignRole(result, config);
+                
+                var guild = Context.Guild ?? Context.Client.GetGuild(config.guildId);
+                var user = guild.GetUser(Context.User.Id);
+                var role = guild.GetRole(result.match.role);
+
+                await user.AddRoleAsync(role);
             } else {
                 await saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
                 await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
@@ -29,37 +43,24 @@ namespace TU20Bot.Commands {
                 await Context.Message.DeleteAsync();
         }
 
-        public CSVData emailCompare(string email, List<CSVData> csvEmailList) {
-
-            foreach (var botUser in csvEmailList) {
-
-                // If both of the emails match
-                if (botUser.Email.Equals(email)) {
-                    return botUser;
-                }
-            }
-
-            // If there's nothing in the list or the list doesn't have user email
-            return null;
-        }
-
-        public async Task assignRole(CSVData userData, Config config) {
-            var guild = Context.Client.GetGuild(config.guildId);
-            var user = guild.GetUser(Context.User.Id);
-
-            // If the email in the list if of a speaker asign the speaker role
-            if (userData.isSpeaker) {
-                var roleSpeaker = guild.GetRole(config.speakerRoleID);
-                await user.AddRoleAsync(roleSpeaker);
-            }
-
-            // If it is not of the speaker assign the attendee role
-            var roleAttendee = guild.GetRole(config.attendeeRoleID);
-            await user.AddRoleAsync(roleAttendee);
-        }
-
-        public async Task saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
+        public static async Task saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
             await commUnverifiedUser.addUserInfo(id, email);
+        }
+
+        public EmailCompareResult compareEmail(string email, IEnumerable<UserMatchPayload> matches) {
+            foreach (var match in matches) {
+                var detail = match.details.FirstOrDefault(x => x.email == email);
+
+                if (detail == null)
+                    continue;
+
+                return new EmailCompareResult {
+                    match = match,
+                    detail = detail
+                };
+            }
+
+            return null;
         }
     }
 }

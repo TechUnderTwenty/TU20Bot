@@ -9,7 +9,7 @@ using Discord;
 
 using TU20Bot.Configuration.Payloads;
 
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class DiscordController : ServerController {
         [Route(HttpVerbs.Put, "/discord/server")]
         public async Task setServer() {

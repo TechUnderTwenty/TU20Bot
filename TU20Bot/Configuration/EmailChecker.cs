@@ -1,13 +1,18 @@
-﻿using Discord;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
+using TU20Bot.Database;
+using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration {
     public class EmailChecker {
-
+        public class EmailMatchResult {
+            public ulong id;
+            public UserMatchPayload match;
+            public UserDetailsPayload detail;
+        }
+        
         private Config config;
         private Client client;
         private DbCommUnverifiedUser dbComm;
@@ -17,63 +22,52 @@ namespace TU20Bot.Configuration {
             this.client = client;
             this.dbComm = dbComm;
         }
+        
+        // Method running on a separate thread and matching any unverified email to the email list in csv
+        public async Task emailCheck(List<UserMatchPayload> matches) {
+            var result = checkEmailInCsvList(matches);
 
+            if (result == null)
+                return;
 
-        // Method running on a separate thread and mathcing any unverified email to the email list in csv
-        public async Task emailCheck(List<CSVData> csvEmail) {
+            var guild = client.GetGuild(config.guildId);
+            var role = guild.GetRole(result.match.role);
+            var user = guild.GetUser(result.id);
 
-            var userInfo = checkEmailInCsvList(csvEmail);
-
-            if (userInfo.userData != null) {
-                await assignRole(userInfo);
-                Console.WriteLine($"user email with id: {userInfo.userId} verified");
-            }
-
+            if (role != null && user != null)
+                await user.AddRoleAsync(role);
+            
+            Console.WriteLine($"User email with id {result.id} verified."); // REVIEW!! Is for debugging really.
         }
 
-        // Method comparing and returing the CSVData and ulong of the user who's email have been verified
-        public (ulong userId, CSVData userData) checkEmailInCsvList(List<CSVData> csvData) {
-
+        // Method comparing and returning the CSVData and ulong of the user who's email have been verified
+        public EmailMatchResult checkEmailInCsvList(List<UserMatchPayload> matches) {
             var unverifiedUserList = dbComm.getUserList();
 
             foreach (var unverifiedUser in unverifiedUserList) {
-
                 // Comparing all emails in the newly obtained csv list with unverified emails
-                foreach (var botUser in csvData) {
-
-                    // If some unverified email matches the email from the csv list,
-                    if (botUser.Email.Equals(unverifiedUser.Email)) {
+                foreach (var match in matches) {
+                    foreach (var detail in match.details) {
+                        // If some unverified email matches the email from the csv list,
+                        if (!detail.email.Equals(unverifiedUser.email))
+                            continue;
 
                         // Get the user id of user associated with that email
-                        ulong Id = unverifiedUser.UserId;
+                        var id = unverifiedUser.userId; // REVIEW!! I don't feel comfortable about this!!
 
                         // Remove that specific index from the dictionary since the user has been verified
                         dbComm.removeUserInfo(unverifiedUser);
 
-                        return (userId: Id, userData: botUser);
+                        return new EmailMatchResult {
+                            id = id,
+                            match = match,
+                            detail = detail
+                        };
                     }
                 }
             }
 
-            return (userId: ulong.MinValue, userData: null);
+            return null;
         }
-
-
-        public async Task assignRole((ulong userId, CSVData userData) userInfo) {
-
-            var user = client.GetGuild(config.guildId).GetUser(userInfo.userId);
-
-            // If the email is of a speaker then asign the speaker role
-            if (userInfo.userData.isSpeaker) {
-                var roleSpeaker = client.GetGuild(config.guildId).GetRole(config.speakerRoleID);
-                await (user as IGuildUser).AddRoleAsync(roleSpeaker);
-            } else {
-                // If the email is not of a speaker then assign an attendee role
-                var roleAttendee = client.GetGuild(config.guildId).GetRole(config.attendeeRoleID);
-                await (user as IGuildUser).AddRoleAsync(roleAttendee);
-            }
-        }
-
-
     }
 }

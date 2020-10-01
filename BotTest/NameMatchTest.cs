@@ -3,117 +3,101 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using TU20Bot;
 using TU20Bot.Commands;
 using TU20Bot.Configuration;
+using TU20Bot.Configuration.Payloads;
 
 namespace BotTest {
     [TestClass]
     public class NameMatchTest {
-
-        private static NameMatch _nameMatch;
-        private static Config _config;
-        private static Client _client;
-        private static Handler _handler;
-        private static CSVReader _csvReader;
-
-        private const bool OUTPUT_TO_DISCORD = false;
+        private static NameMatch nameMatch;
+        private static Config config;
+        private static Client client;
+        
+        private readonly List<UserDetailsPayload> nameSet = new List<UserDetailsPayload>{
+            new UserDetailsPayload {
+                firstName = "John",
+                lastName = "Doe",
+                email = "johndoe@tu20.com"
+            },
+        };
 
         [ClassInitialize]
-        public static async Task ClassInitialize(TestContext testContext) {
-
-            string token = "";
+        public static async Task setup(TestContext testContext) {
+            string token;
 
             // Start bot with token from "token.txt" in working folder.
             try {
-                token = File.ReadAllText("token.txt").Trim();
+                token = await File.ReadAllTextAsync("token.txt");
             } catch (IOException) {
                 // current directory: BotTest/bin/Debug/netcoreapp3.1
                 Console.WriteLine("Could not read from token.txt." +
                     " Did you put token.txt file in the current directory?");
-                Assert.Fail();
+                return;
             }
 
-            // Initializing all the requored classes
-            _config = new Config();
-            _client = new Client(_config);
-            _handler = new Handler(_client);
-            _csvReader = new CSVReader(_config);
+            // Initializing all the required classes
+            config = new Config();
+            client = new Client(config);
 
-            await _handler.init();
-
-            _config.userDataCsv = _csvReader.readFile();
+            config.matches.Add(new UserMatchPayload {
+                role = 0,
+                details = CSVReader.readFile()
+            });
 
             // Logging in the bot
-            await _client.LoginAsync(TokenType.Bot, token);
-            await _client.StartAsync();
+            await client.LoginAsync(TokenType.Bot, token);
+            await client.StartAsync();
 
-            _nameMatch = new NameMatch();
+            nameMatch = new NameMatch();
         }
 
         [TestMethod]
-        public async Task CheckMatchName() {
-
+        public void checkMatchName() {
             // Waiting for the bot to log in and appear online
-            bool ready = false;
-            _client.Ready += () => {
+            var ready = false;
+            client.Ready += () => {
                 ready = true;
                 return Task.CompletedTask;
             };
-            while (!ready) ;
+            while (!ready) { }
 
-            var guild = _client.GetGuild(_config.guildId);
+            var guild = client.GetGuild(config.guildId);
             var users = guild.Users;
 
             //Sending a message to a specified channel in a specified server using the algorithm function
-            var stringResponse = await _nameMatch.nameMatching(_config.userDataCsv, users, null);
+            nameMatch.matchNames(config.matches.SelectMany(x => x.details), users);
 
             // TODO: Add thorough checks to verify the algorithm is working as intended
-
-            if (OUTPUT_TO_DISCORD)
-                await guild.GetTextChannel(_config.welcomeChannelId).SendMessageAsync(stringResponse);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_FullMatch() {
-            List<CSVData> nameSet = new List<CSVData>{
-            new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
-            };
-            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+        public void checkFullName() {
+            var response = NameMatch.matchName(null, nameSet, "John Doe");
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CompleteMatch);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_LastNameMatch() {
-            List<CSVData> nameSet = new List<CSVData>{
-            new CSVData { FirstName = "Bill", LastName = "Doe", Email = "johndoe@tu20.com" },
-            };
-            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+        public void checkLastName() {
+            var response = NameMatch.matchName(null, nameSet, "John Doe");
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
             Assert.IsTrue(response.lastNameMatch.Count == 1);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_NoSpaceMatch() {
-            List<CSVData> nameSet = new List<CSVData>{
-            new CSVData { FirstName = "John", LastName = "Doe", Email = "johndoe@tu20.com" },
-            };
-            var response = NameMatch.nameMatchAlg("JohnDoe", nameSet);
+        public void checkNoSpace() {
+            var response = NameMatch.matchName(null, nameSet, "JohnDoe");
             Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
             Assert.IsTrue(response.noSpacesMatch.Count == 1);
         }
 
         [TestMethod]
-        public void TestMatchNameAlgorithm_NoMatch() {
-            List<CSVData> nameSet = new List<CSVData>{
-            new CSVData { FirstName = "Bill", LastName = "Johnson", Email = "johndoe@tu20.com" },
-            };
-            var response = NameMatch.nameMatchAlg("John Doe", nameSet);
+        public void checkNameAlgorithm() {
+            var response = NameMatch.matchName(null, nameSet, "Bill Pizza");
             Assert.AreEqual(response.level, NameMatch.MatchLevel.NoMatch);
         }
-
     }
-
-
 }

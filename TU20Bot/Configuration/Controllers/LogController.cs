@@ -7,9 +7,7 @@ using EmbedIO.Routing;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
-using TU20Bot.Configuration.Payloads;
-
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class LogController : ServerController {
         [Route(HttpVerbs.Get, "/logs/excel.xlsx")]
         public void getExcelLogs() {

@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TU20Bot.Configuration;
+
+using TU20Bot.Database;
 
 namespace TU20Bot.Migrations
 {

@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 
-namespace TU20Bot.Configuration {
+using Microsoft.EntityFrameworkCore;
+
+using TU20Bot.Models;
+
+namespace TU20Bot.Database {
     public class BotDbContext : DbContext {
-
         public DbSet<UnverifiedUser> unverifiedUsers { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {

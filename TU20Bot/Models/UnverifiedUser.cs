@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
-
-namespace TU20Bot.Configuration {
+﻿namespace TU20Bot.Models {
     public class UnverifiedUser {
-        
-        public int Id { get; set; }
-
-        public ulong UserId { get; set; }
-
-        public string Email { get; set; }
-
+        public int id { get; set; }
+        public ulong userId { get; set; }
+        public string email { get; set; }
     }
 }

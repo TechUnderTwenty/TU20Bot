@@ -1,67 +1,78 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using TU20Bot;
 using TU20Bot.Commands;
+using TU20Bot.Database;
 using TU20Bot.Configuration;
-using Discord;
-using System.Linq;
-using System.Collections.Generic;
-using CsvHelper;
-using System.Globalization;
+using TU20Bot.Configuration.Payloads;
 
 namespace BotTest {
     [TestClass]
     public class EmailVerificationTest {
-
-        private static EmailVerification _emailVerification;
-        private static EmailChecker _emailChecker;
-        private static Config _config;
-        private static Client _client;
-        private static DbCommUnverifiedUser _dbComm;
+        private static EmailVerification emailVerification;
+        private static EmailChecker emailChecker;
+        private static Config config;
+        private static Client client;
+        private static DbCommUnverifiedUser dbComm;
+        
+        private static readonly List<UserMatchPayload> records = new List<UserMatchPayload> {
+            new UserMatchPayload {
+                role = 0,
+                details = new List<UserDetailsPayload> {
+                    new UserDetailsPayload {
+                        firstName = "john1",
+                        lastName = "Doe1",
+                        email = "johndoe@tu20.com"
+                    }
+                }
+            }
+        };
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext) {
-
+        public static void setup(TestContext testContext) {
             // Initializing all the required classes
-            _config = new Config();
-            _client = new Client(_config);
+            config = new Config();
+            client = new Client(config);
 
-            _dbComm = new DbCommUnverifiedUser(new BotDbContext());
-            _emailVerification = new EmailVerification();
-            _emailChecker = new EmailChecker(_config, _client, _dbComm);
+            dbComm = new DbCommUnverifiedUser(new BotDbContext());
+            emailVerification = new EmailVerification();
+            emailChecker = new EmailChecker(config, client, dbComm);
         }
 
 
         [TestMethod]
-        public void CheckCompareMethod() {
-            var records = new List<CSVData> {
-                new CSVData { FirstName = "john1", LastName = "Doe1", Email = "johndoe@tu20.com", isSpeaker = true },
-            };
-
-            Assert.IsNotNull(_emailVerification.emailCompare("johndoe@tu20.com", records));
-
-            Assert.IsNull(_emailVerification.emailCompare("johndoe@nothing.com", records));
+        public void checkCompareMethod() {
+            Assert.IsNotNull(emailVerification.compareEmail("johndoe@tu20.com", records));
+            Assert.IsNull(emailVerification.compareEmail("johndoe@nothing.com", records));
         }
 
         [TestMethod]
-        public async Task CheckNotInListEmail() {
-            var records = new List<CSVData> { };
+        public async Task checkNotInList() {
             // Running the method with an email not in the list 
-            Assert.IsNull(_emailVerification.emailCompare("johndoe@examplemail.com", records));
+            Assert.IsNull(emailVerification.compareEmail("johndoe@examplemail.com", records));
 
             // Adding the same unavailable email to the csv file and dictionary
-            await _emailVerification.saveUnverifiedEmail(_dbComm, 1, "johndoe@examplemail.com");
-            records.Add(new CSVData { FirstName = "john", LastName = "Doe", Email = "johndoe@examplemail.com", isSpeaker = true });
+            await EmailVerification.saveUnverifiedEmail(dbComm, 1, "johndoe@examplemail.com");
+            
+            records.Add(new UserMatchPayload {
+                details = new List<UserDetailsPayload> {
+                    new UserDetailsPayload {
+                        firstName = "john",
+                        lastName = "Doe",
+                        email = "johndoe@examplemail.com"
+                    }
+                }
+            });
 
             // Checking to see if the email is present in the list
             // This will be run on separate thread when program is running
-            var result = _emailChecker.checkEmailInCsvList(records);
+            var result = emailChecker.checkEmailInCsvList(records);
 
             // If the function is working properly, it will return the persons info
-            Assert.IsNotNull(result.userData);
+            Assert.IsNotNull(result.detail);
         }
     }
 }

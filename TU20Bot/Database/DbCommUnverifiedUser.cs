@@ -1,14 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Internal;
-using Org.BouncyCastle.Math.EC.Rfc7748;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace TU20Bot.Configuration {
+using TU20Bot.Models;
+
+namespace TU20Bot.Database {
     public class DbCommUnverifiedUser {
-        private BotDbContext db;
+        private readonly BotDbContext db;
 
         public DbCommUnverifiedUser(BotDbContext context) {
             db = context;
@@ -17,8 +16,8 @@ namespace TU20Bot.Configuration {
         // Adds the info given in the parameters to the db
         public async Task addUserInfo(ulong userId, string email) {
             await db.unverifiedUsers.AddAsync(new UnverifiedUser {
-                UserId = userId,
-                Email = email,
+                userId = userId,
+                email = email,
             });
            await db.SaveChangesAsync();
         }
@@ -28,7 +27,7 @@ namespace TU20Bot.Configuration {
             return db.unverifiedUsers.ToList();
         }
 
-        // Removes a sepcific row from the db
+        // Removes a specific row from the db
         public void removeUserInfo(UnverifiedUser user) {
             db.unverifiedUsers.Remove(user);
 
