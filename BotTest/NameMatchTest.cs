@@ -10,19 +10,21 @@ using System.Threading.Tasks;
 using TU20Bot;
 using TU20Bot.Commands;
 using TU20Bot.Configuration;
+using TU20Bot.Configuration.Payloads;
 
 namespace BotTest {
     [TestClass]
     public class NameMatchTest {
+        private static NameMatch nameMatch;
         private static Config config;
         private static Client client;
         
-        private readonly List<UserDetails> nameSet = new List<UserDetails>{
-            new UserDetails {
+        private readonly List<UserDetailsPayload> nameSet = new List<UserDetailsPayload>{
+            new UserDetailsPayload {
                 firstName = "John",
                 lastName = "Doe",
                 email = "johndoe@tu20.com"
-            }
+            },
         };
 
         [ClassInitialize]
@@ -43,7 +45,7 @@ namespace BotTest {
             config = new Config();
             client = new Client(config);
 
-            config.matches.Add(new UserMatch {
+            config.matches.Add(new UserMatchPayload {
                 role = 0,
                 details = CSVReader.readFile()
             });
@@ -51,6 +53,8 @@ namespace BotTest {
             // Logging in the bot
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
+
+            nameMatch = new NameMatch();
         }
 
         [TestMethod]
@@ -67,7 +71,7 @@ namespace BotTest {
             var users = guild.Users;
 
             //Sending a message to a specified channel in a specified server using the algorithm function
-            NameMatch.matchNames(config.matches.SelectMany(x => x.details), users);
+            nameMatch.matchNames(config.matches.SelectMany(x => x.details), users);
 
             // TODO: Add thorough checks to verify the algorithm is working as intended
         }

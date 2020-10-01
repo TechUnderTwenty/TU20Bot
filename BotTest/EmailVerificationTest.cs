@@ -18,11 +18,11 @@ namespace BotTest {
         private static Client client;
         private static DbCommUnverifiedUser dbComm;
         
-        private static readonly List<UserMatch> records = new List<UserMatch> {
-            new UserMatch {
+        private static readonly List<UserMatchPayload> records = new List<UserMatchPayload> {
+            new UserMatchPayload {
                 role = 0,
-                details = new List<UserDetails> {
-                    new UserDetails {
+                details = new List<UserDetailsPayload> {
+                    new UserDetailsPayload {
                         firstName = "john1",
                         lastName = "Doe1",
                         email = "johndoe@tu20.com"
@@ -57,9 +57,9 @@ namespace BotTest {
             // Adding the same unavailable email to the csv file and dictionary
             await EmailVerification.saveUnverifiedEmail(dbComm, 1, "johndoe@examplemail.com");
             
-            records.Add(new UserMatch {
-                details = new List<UserDetails> {
-                    new UserDetails {
+            records.Add(new UserMatchPayload {
+                details = new List<UserDetailsPayload> {
+                    new UserDetailsPayload {
                         firstName = "john",
                         lastName = "Doe",
                         email = "johndoe@examplemail.com"

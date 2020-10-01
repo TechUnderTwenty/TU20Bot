@@ -12,8 +12,8 @@ using TU20Bot.Database;
 
 namespace TU20Bot.Commands {
     public class EmailCompareResult {
-        public UserMatch match;
-        public UserDetails detail;
+        public UserMatchPayload match;
+        public UserDetailsPayload detail;
     }
     
     public class EmailVerification : ModuleBase<SocketCommandContext> {
@@ -47,7 +47,7 @@ namespace TU20Bot.Commands {
             await commUnverifiedUser.addUserInfo(id, email);
         }
 
-        public EmailCompareResult compareEmail(string email, IEnumerable<UserMatch> matches) {
+        public EmailCompareResult compareEmail(string email, IEnumerable<UserMatchPayload> matches) {
             foreach (var match in matches) {
                 var detail = match.details.FirstOrDefault(x => x.email == email);
 

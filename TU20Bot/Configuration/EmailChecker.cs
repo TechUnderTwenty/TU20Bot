@@ -9,8 +9,8 @@ namespace TU20Bot.Configuration {
     public class EmailChecker {
         public class EmailMatchResult {
             public ulong id;
-            public UserMatch match;
-            public UserDetails detail;
+            public UserMatchPayload match;
+            public UserDetailsPayload detail;
         }
         
         private Config config;
@@ -24,7 +24,7 @@ namespace TU20Bot.Configuration {
         }
         
         // Method running on a separate thread and matching any unverified email to the email list in csv
-        public async Task emailCheck(List<UserMatch> matches) {
+        public async Task emailCheck(List<UserMatchPayload> matches) {
             var result = checkEmailInCsvList(matches);
 
             if (result == null)
@@ -41,7 +41,7 @@ namespace TU20Bot.Configuration {
         }
 
         // Method comparing and returning the CSVData and ulong of the user who's email have been verified
-        public EmailMatchResult checkEmailInCsvList(List<UserMatch> matches) {
+        public EmailMatchResult checkEmailInCsvList(List<UserMatchPayload> matches) {
             var unverifiedUserList = dbComm.getUserList();
 
             foreach (var unverifiedUser in unverifiedUserList) {

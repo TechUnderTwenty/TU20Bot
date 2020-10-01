@@ -3,7 +3,7 @@ using System.Linq;
 using Discord.Commands;
 using Discord.WebSocket;
 
-using TU20Bot.Configuration;
+using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Commands {
     public class NameMatch : ModuleBase<SocketCommandContext> {
@@ -14,15 +14,14 @@ namespace TU20Bot.Commands {
         }
 
         public class MatchResult {
-            public MatchLevel level;
-            public List<string> noSpacesMatch;
-            public List<string> lastNameMatch;
-            public SocketGuildUser user;
-            public string fullName;
+            public MatchLevel level { get; set; }
+            public List<string> noSpacesMatch { get; set; }
+            public List<string> lastNameMatch { get; set; }
+            public SocketGuildUser user { get; set; }
+            public string fullName { get; set; }
         }
 
-        public static List<MatchResult> matchNames(
-            IEnumerable<UserDetails> details, IEnumerable<SocketGuildUser> users) {
+        public List<MatchResult> matchNames(IEnumerable<UserDetailsPayload> details, IEnumerable<SocketGuildUser> users) {
             return users.Select(x => matchName(x, details)).ToList();
         }
 
@@ -30,7 +29,7 @@ namespace TU20Bot.Commands {
         /// Given an unknown name and a set of valid names, identify any matches.
         /// </summary>
         public static MatchResult matchName(
-            SocketGuildUser user, IEnumerable<UserDetails> details, string name = null) {
+            SocketGuildUser user, IEnumerable<UserDetailsPayload> details, string name = null) {
             var fullName = name ?? user.Nickname ?? user.Username;
 
             var matchResult = new MatchResult {

@@ -60,7 +60,7 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
 
-        public readonly List<UserMatch> matches = new List<UserMatch>();
+        public readonly List<UserMatchPayload> matches = new List<UserMatchPayload>();
         public readonly List<LogEntry> logs = new List<LogEntry>();
         public readonly List<FactoryDescription> factories = new List<FactoryDescription>();
 
