@@ -41,7 +41,7 @@ namespace TU20Bot.Configuration.Controllers {
                 var user = guild.GetUser(log.id);
 
                 sheet.DefaultColumnWidth = 20;
-                
+
                 var row = sheet.CreateRow(a + 1);
                 row.CreateCell(0).SetCellValue(log.logEvent switch {
                     LogEvent.UserJoin => "Joined",

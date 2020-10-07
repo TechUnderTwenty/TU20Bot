@@ -43,5 +43,15 @@ namespace TU20Bot.Configuration.Controllers {
 
             return y;
         }
+
+        [Route(HttpVerbs.Get, "/discord/roles")]
+        public IEnumerable<object> getRoles() {
+            var guild = server.client.GetGuild(server.config.guildId);
+
+            return guild.Roles.Select(x => new {
+                id = x.Id.ToString(),
+                name = x.Name
+            });
+        }
     }
 }

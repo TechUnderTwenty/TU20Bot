@@ -29,6 +29,20 @@ namespace TU20Bot.Configuration {
         [XmlIgnore]
         public Timer timer;
     }
+    
+    public class UserDetails {
+        public string firstName;
+        public string lastName;
+        public string email;
+
+        public string fullName => firstName + " " + lastName;
+        public string fullNameNoSpace => firstName + lastName;
+    }
+
+    public class UserMatch {
+        public List<UserDetails> details = new List<UserDetails>();
+        public ulong role;
+    }
 
     public class Config {
         public const string defaultPath = "config.xml";
@@ -46,7 +60,7 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
 
-        public readonly List<UserMatchPayload> matches = new List<UserMatchPayload>();
+        public readonly List<UserMatch> matches = new List<UserMatch>();
         public readonly List<LogEntry> logs = new List<LogEntry>();
         public readonly List<FactoryDescription> factories = new List<FactoryDescription>();
 
