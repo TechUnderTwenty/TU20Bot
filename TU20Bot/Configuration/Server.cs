@@ -2,6 +2,8 @@ using System;
 using EmbedIO;
 using EmbedIO.WebApi;
 
+using TU20Bot.Configuration.Controllers;
+
 namespace TU20Bot.Configuration {
     public class Server : WebServer {
         private const string hostIp = "http://127.0.0.1";
@@ -30,7 +32,8 @@ namespace TU20Bot.Configuration {
                     .WithController(createFactory<DiscordController>())
                     .WithController(createFactory<LogController>())
                     .WithController(createFactory<CommitController>())
-                    .WithController(createFactory<FactoryController>()));
+                    .WithController(createFactory<FactoryController>())
+                    .WithController(createFactory<MatchController>()));
         }
     }
 }

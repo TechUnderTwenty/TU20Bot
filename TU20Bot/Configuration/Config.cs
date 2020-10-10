@@ -1,9 +1,10 @@
 using System;
 using System.IO;
+using System.Timers;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 
-using System.Timers;
+using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration {
     public enum LogEvent {
@@ -28,6 +29,20 @@ namespace TU20Bot.Configuration {
         [XmlIgnore]
         public Timer timer;
     }
+    
+    public class UserDetails {
+        public string firstName;
+        public string lastName;
+        public string email;
+
+        public string fullName => firstName + " " + lastName;
+        public string fullNameNoSpace => firstName + lastName;
+    }
+
+    public class UserMatch {
+        public List<UserDetails> details = new List<UserDetails>();
+        public ulong role;
+    }
 
     public class Config {
         public const string defaultPath = "config.xml";
@@ -45,11 +60,7 @@ namespace TU20Bot.Configuration {
             "Howdy"
         };
 
-        public readonly ulong speakerRoleID = 753311645585113258;
-
-        public readonly ulong attendeeRoleID = 753311315623411764;
-
-        public List<CSVData> userDataCsv;
+        public readonly List<UserMatch> matches = new List<UserMatch>();
         public readonly List<LogEntry> logs = new List<LogEntry>();
         public readonly List<FactoryDescription> factories = new List<FactoryDescription>();
 

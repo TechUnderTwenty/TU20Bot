@@ -7,9 +7,7 @@ using EmbedIO.Routing;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
-using TU20Bot.Configuration.Payloads;
-
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class LogController : ServerController {
         [Route(HttpVerbs.Get, "/logs/excel.xlsx")]
         public void getExcelLogs() {
@@ -43,7 +41,7 @@ namespace TU20Bot.Configuration {
                 var user = guild.GetUser(log.id);
 
                 sheet.DefaultColumnWidth = 20;
-                
+
                 var row = sheet.CreateRow(a + 1);
                 row.CreateCell(0).SetCellValue(log.logEvent switch {
                     LogEvent.UserJoin => "Joined",

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
-using Org.BouncyCastle.Math.EC.Rfc7748;
 using TU20Bot.Configuration;
 
 namespace TU20Bot {
@@ -16,8 +15,6 @@ namespace TU20Bot {
         private Config config;
         private Server server;
         private Handler handler;
-        private CSVReader csvReader;
-        private DbCommUnverifiedUser dbCommUnverifiedUser;
 
         // Initializes Discord.Net
         private async Task start() {
@@ -27,9 +24,6 @@ namespace TU20Bot {
             server = new Server(client);
             handler = new Handler(client);
 
-            dbCommUnverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
-            csvReader = new CSVReader(config);
-
             await handler.init();
 
             await client.LoginAsync(TokenType.Bot, token);
@@ -37,19 +31,6 @@ namespace TU20Bot {
 
             // Run server on another thread.
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
-
-            // Run email checker on another thread every 15 min
-            new Thread(new ThreadStart(async () => {
-
-                do {
-                    // Reading and assigning data from csv file every 15 min
-                    config.userDataCsv = csvReader.readFile();
-
-                    await new EmailChecker(config, client, dbCommUnverifiedUser).emailCheck(config.userDataCsv);
-                    await Task.Delay(1800000);
-
-                } while (true);
-            })).Start();
 
             await Task.Delay(-1);
         }

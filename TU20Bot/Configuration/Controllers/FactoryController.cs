@@ -9,7 +9,7 @@ using EmbedIO.Routing;
 
 using TU20Bot.Configuration.Payloads;
 
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class FactoryController : ServerController {
         private object convertChannel(ulong id) {
             var channel = server.client.GetChannel(id) as IVoiceChannel;
