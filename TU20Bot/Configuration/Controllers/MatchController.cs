@@ -2,13 +2,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-
+using System.Net;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
 using EmbedIO;
 using EmbedIO.Routing;
-
+using NPOI.SS.Formula.Eval;
+using TU20Bot.Support;
 using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration.Controllers {
@@ -16,6 +17,36 @@ namespace TU20Bot.Configuration.Controllers {
         private struct CellReference {
             public int columnNumber;
             public int rowNumber;
+        }
+
+        private async Task<bool> evaluateMatch(UserMatch match) {
+            var guild = server.client.GetGuild(server.config.guildId);
+            
+            // Being cautious, even though EmbedIO will do this for me.
+            if (guild == null)
+                return false;
+
+            var role = guild.GetRole(match.role);
+            var users = guild.Users;
+            var results = NameMatcher
+                .matchNames(match.details, users)
+                .Where(result => result.level == NameMatcher.MatchLevel.NoMatch);
+
+            if (role == null || users == null)
+                return false;
+
+            // Assign roles to people who matched. This is blocking right now.
+            foreach (var result in results) {
+                var user = guild.GetUser(result.id);
+
+                // Just in case...
+                if (user == null)
+                    continue;
+
+                await user.AddRoleAsync(role);
+            }
+
+            return true;
         }
         
         [Route(HttpVerbs.Get, "/match")]
@@ -37,18 +68,18 @@ namespace TU20Bot.Configuration.Controllers {
 
         [Route(HttpVerbs.Post, "/match")]
         public async Task<int> createMatch() {
-            var match = await HttpContext.GetRequestDataAsync<MatchJsonPayload>();
+            var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
 
-            server.config.matches.Add(new UserMatch {
-                role = ulong.Parse(match.role),
-                details = match.details.Select(x => new UserDetails {
-                    email = x.email,
-                    firstName = x.firstName,
-                    lastName = x.lastName
-                }).ToList()
-            });
+            if (!await evaluateMatch(match)) {
+                HttpContext.Response.StatusCode = 500;
+                return -1;
+            }
+            
+            // Add it to the config for future matches.
+            var index = server.config.matches.Count;
+            server.config.matches.Add(match);
 
-            return server.config.matches.Count - 1;
+            return index;
         }
 
         // Convenience for MatchController.editData(). Fetches data from a NPOI row.
@@ -80,7 +111,7 @@ namespace TU20Bot.Configuration.Controllers {
         // Very long method, seems like that's the case with spreadsheets.
         // I apologize for the next person who has to edit this method.
         [Route(HttpVerbs.Put, "/match/{index}/data")]
-        public object editData(int index) {
+        public async Task<object> editData(int index) {
             var workbook = new XSSFWorkbook(HttpContext.Request.InputStream);
 
             // Spreadsheet parsing can go wrong quickly, I'm trying to make good error messages to catch that.
@@ -155,7 +186,7 @@ namespace TU20Bot.Configuration.Controllers {
                         }.Where(x => x != null));
 
                         return new {
-                            error = $"Row conflict detected, headers were split across multiple rows ({errorMessage})."
+                            error = $"Headers were split across multiple rows ({errorMessage})."
                         };
                     }
 
@@ -239,29 +270,33 @@ namespace TU20Bot.Configuration.Controllers {
             match.details = details;
 
             // :cry: I made it!!!
-            return new {
-                details = match.details.Select(x => new {
-                    x.email,
-                    x.firstName,
-                    x.lastName
-                })
-            };
+            if (await evaluateMatch(match)) {
+                return new {
+                    details = match.details.Select(x => new {
+                        x.email,
+                        x.firstName,
+                        x.lastName
+                    })
+                };
+            }
+            
+            HttpContext.Response.StatusCode = 500;
+            return null;
         }
 
         [Route(HttpVerbs.Put, "/match/{index}")]
         public async Task editMatch(int index) {
-            var match = await HttpContext.GetRequestDataAsync<MatchJsonPayload>();
+            var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
+
+            if (!await evaluateMatch(match)) {
+                HttpContext.Response.StatusCode = 500;
+                return;
+            }
             
-            server.config.matches[index] = new UserMatch {
-                role = ulong.Parse(match.role),
-                details = match.details.Select(x => new UserDetails {
-                    email = x.email,
-                    firstName = x.firstName,
-                    lastName = x.lastName
-                }).ToList()
-            };
+            server.config.matches[index] = match;
         }
 
+        // To lazy to make this remove roles... just delete the role yourself.
         [Route(HttpVerbs.Delete, "/match/{index}")]
         public void deleteMatch(int index) {
             server.config.matches.RemoveAt(index);

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using System.Linq;
 using Swan.Formatters;
 
 namespace TU20Bot.Configuration.Payloads {
@@ -15,5 +15,16 @@ namespace TU20Bot.Configuration.Payloads {
 
         [JsonProperty("details")]
         public List<UserJsonPayload> details { get; set; }
+
+        public UserMatch toUserMatch() {
+            return new UserMatch {
+                role = ulong.Parse(role),
+                details = details.Select(x => new UserDetails {
+                    email = x.email,
+                    firstName = x.firstName,
+                    lastName = x.lastName
+                }).ToList()
+            };
+        }
     }
 }

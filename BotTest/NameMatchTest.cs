@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using TU20Bot;
-using TU20Bot.Commands;
+using TU20Bot.Support;
 using TU20Bot.Configuration;
 
 namespace BotTest {
@@ -41,7 +41,7 @@ namespace BotTest {
 
             // Initializing all the required classes
             config = new Config();
-            client = new Client(config);
+            client = new Client(config, null);
 
             config.matches.Add(new UserMatch {
                 role = 0,
@@ -51,51 +51,50 @@ namespace BotTest {
             // Logging in the bot
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
-        }
-
-        [TestMethod]
-        public void checkMatchName() {
-            // Waiting for the bot to log in and appear online
+            
             var ready = false;
             client.Ready += () => {
                 ready = true;
                 return Task.CompletedTask;
             };
             while (!ready) { }
+        }
 
+        [TestMethod]
+        public void checkMatchName() {
             var guild = client.GetGuild(config.guildId);
             var users = guild.Users;
 
             //Sending a message to a specified channel in a specified server using the algorithm function
-            NameMatch.matchNames(config.matches.SelectMany(x => x.details), users);
+            NameMatcher.matchNames(config.matches.SelectMany(x => x.details), users);
 
             // TODO: Add thorough checks to verify the algorithm is working as intended
         }
 
         [TestMethod]
         public void checkFullName() {
-            var response = NameMatch.matchName(null, nameSet, "John Doe");
-            Assert.AreEqual(response.level, NameMatch.MatchLevel.CompleteMatch);
+            var response = NameMatcher.matchName(null, nameSet, "John Doe");
+            Assert.AreEqual(response.level, NameMatcher.MatchLevel.CompleteMatch);
         }
 
         [TestMethod]
         public void checkLastName() {
-            var response = NameMatch.matchName(null, nameSet, "John Doe");
-            Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
+            var response = NameMatcher.matchName(null, nameSet, "John Doe");
+            Assert.AreEqual(response.level, NameMatcher.MatchLevel.PartialMatch);
             Assert.IsTrue(response.lastNameMatch.Count == 1);
         }
 
         [TestMethod]
         public void checkNoSpace() {
-            var response = NameMatch.matchName(null, nameSet, "JohnDoe");
-            Assert.AreEqual(response.level, NameMatch.MatchLevel.CloseMatch);
+            var response = NameMatcher.matchName(null, nameSet, "JohnDoe");
+            Assert.AreEqual(response.level, NameMatcher.MatchLevel.PartialMatch);
             Assert.IsTrue(response.noSpacesMatch.Count == 1);
         }
 
         [TestMethod]
         public void checkNameAlgorithm() {
-            var response = NameMatch.matchName(null, nameSet, "Bill Pizza");
-            Assert.AreEqual(response.level, NameMatch.MatchLevel.NoMatch);
+            var response = NameMatcher.matchName(null, nameSet, "Bill Pizza");
+            Assert.AreEqual(response.level, NameMatcher.MatchLevel.NoMatch);
         }
     }
 }
