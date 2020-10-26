@@ -5,16 +5,19 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
+
+using MongoDB.Driver;
+
 using TU20Bot.Configuration;
 
 namespace TU20Bot {
     internal class Program {
-        private readonly string token;
-
         private Client client;
         private Config config;
         private Server server;
         private Handler handler;
+        private MongoClient mongo;
+        private IMongoDatabase database;
 
         // Initializes Discord.Net
         private async Task start(string[] args) {
@@ -41,9 +44,10 @@ namespace TU20Bot {
             await client.LoginAsync(TokenType.Bot, config.token);
             await client.StartAsync();
 
-            // Run server on another thread.
+            // Run server on another thread...
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
+            // Don't exit.
             await Task.Delay(-1);
         }
 

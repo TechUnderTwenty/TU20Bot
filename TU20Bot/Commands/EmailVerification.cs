@@ -1,66 +1,38 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 using Discord;
 using Discord.Commands;
-using Microsoft.EntityFrameworkCore.Internal;
-using TU20Bot.Configuration;
-using TU20Bot.Configuration.Payloads;
-
-using TU20Bot.Database;
 
 namespace TU20Bot.Commands {
-    public class EmailCompareResult {
-        public UserMatch match;
-        public UserDetails detail;
-    }
-    
     public class EmailVerification : ModuleBase<SocketCommandContext> {
         [Command("verify")]
-        public async Task emailVerify(string email) {
-            // Change dictionary such that it doesn't give an error with the same key
+        public async Task verifyEmail(string email) {
             var config = ((Client)Context.Client).config;
-            var unverifiedUser = new DbCommUnverifiedUser(new BotDbContext());
 
-            var result = compareEmail(email, config.matches);
+            var guild = Context.Client.GetGuild(config.guildId);
 
-            if (result.detail != null) {
-                await ReplyAsync("Email verified");
+            if (guild == null) {
+                await Context.Channel.SendMessageAsync("Configuration problem :O dm admins please.");
+                return;
+            }
+
+            // TODO: This linq query should be done with MongoDB, but I'm sleepy and I want to do it later.
+            var roles = config.matches
+                .Where(x => x.details.Any(y => y.email == email)) // find any matches that have matching emails
+                .Select(x => guild.GetRole(x.role)) // grab the roles
+                .ToList();
+
+            if (roles.Any()) {
+                // We want to get the user again to make sure guild information is attached (in case of DM).
+                var guildUser = guild.GetUser(Context.User.Id);
                 
-                var guild = Context.Guild ?? Context.Client.GetGuild(config.guildId);
-                var user = guild.GetUser(Context.User.Id);
-                var role = guild.GetRole(result.match.role);
-
-                await user.AddRoleAsync(role);
-            } else {
-                await saveUnverifiedEmail(unverifiedUser, Context.User.Id, email);
-                await ReplyAsync("Could not verify email. Your email has been saved and will be verified automatically.");
+                await guildUser.AddRolesAsync(roles);
             }
 
             // If the message was not sent in a private (direct message) channel, remove it
             if (!(Context.Message.Channel is IPrivateChannel))
                 await Context.Message.DeleteAsync();
-        }
-
-        public static async Task saveUnverifiedEmail(DbCommUnverifiedUser commUnverifiedUser, ulong id, string email) {
-            await commUnverifiedUser.addUserInfo(id, email);
-        }
-
-        public EmailCompareResult compareEmail(string email, IEnumerable<UserMatch> matches) {
-            foreach (var match in matches) {
-                var detail = match.details.FirstOrDefault(x => x.email == email);
-
-                if (detail == null)
-                    continue;
-
-                return new EmailCompareResult {
-                    match = match,
-                    detail = detail
-                };
-            }
-
-            return null;
         }
     }
 }

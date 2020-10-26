@@ -17,7 +17,7 @@ namespace TU20Bot.Configuration.Controllers {
             var bold = workbook.CreateFont();
             bold.IsBold = true;
 
-            XSSFRichTextString style(string x, IFont index) {
+            static XSSFRichTextString style(string x, IFont index) {
                 var text = new XSSFRichTextString(x);
 
                 text.ApplyFont(0, x.Length, index);
@@ -65,6 +65,7 @@ namespace TU20Bot.Configuration.Controllers {
 
             return server.config.logs
                 .OrderBy(x => x.time)
+                .Reverse()
                 .Select(x => new {
                     type = x.logEvent switch {
                         LogEvent.UserJoin => "join",
@@ -74,7 +75,7 @@ namespace TU20Bot.Configuration.Controllers {
                     id = x.id.ToString(),
                     joinDate = x.time,
                     username = x.name,
-                    discriminator = x.discriminator,
+                    x.discriminator,
                     nickname = guild.GetUser(x.id)?.Nickname
                 });
         }

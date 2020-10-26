@@ -1,15 +1,15 @@
 using System;
 using System.Linq;
-using System.Timers;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-
-using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
+using TU20Bot.Support;
 using TU20Bot.Configuration;
 
 namespace TU20Bot {
@@ -103,6 +103,7 @@ namespace TU20Bot {
         
         // Called when a user joins the server.
         private async Task userJoined(SocketGuildUser user) {
+            // Log
             client.config.logs.Add(new LogEntry {
                 logEvent = LogEvent.UserJoin,
                 id = user.Id,
@@ -111,6 +112,7 @@ namespace TU20Bot {
                 time = DateTime.UtcNow
             });
             
+            // Greetings
             var channel = (IMessageChannel)client.GetChannel(client.config.welcomeChannelId);
 
             var greetings = client.config.welcomeMessages;
@@ -118,6 +120,17 @@ namespace TU20Bot {
             // Send welcome message.
             await channel.SendMessageAsync(
                 greetings[random.Next(0, greetings.Count)] + $" <@{user.Id}>");
+
+            // Match
+            var roles = client.config.matches
+                .Select(x => new { x.role, value = NameMatcher.matchName(user, x.details) }) // run name match
+                .Where(x => x.value.level != NameMatcher.MatchLevel.NoMatch) // drop people who didn't match
+                .Select(x => user.Guild.GetRole(x.role)) // grab the roles
+                .ToList();
+
+            // Add the roles.
+            if (roles.Any()) 
+                await user.AddRolesAsync(roles);
         }
 
         private async Task voiceUpdated(
@@ -160,7 +173,7 @@ namespace TU20Bot {
 
             if (moveTo != null) {
                 await ((SocketGuildUser)user).ModifyAsync(
-                    x => x.Channel = new Optional<IVoiceChannel>(moveTo));
+                    x => x.Channel = new Discord.Optional<IVoiceChannel>(moveTo));
             }
         }
 
