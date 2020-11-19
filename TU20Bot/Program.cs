@@ -36,6 +36,7 @@ namespace TU20Bot {
             }
 
             client = new Client(config, database);
+            
             handler = new Handler(client);
 
             await handler.init();

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -6,6 +5,7 @@ using Discord;
 using Discord.Commands;
 
 using MongoDB.Driver;
+ 
 using TU20Bot.Models;
 
 namespace TU20Bot.Commands {

@@ -24,13 +24,14 @@ namespace TU20Bot.Configuration.Controllers {
 
         private async Task<bool> evaluateMatch(UserMatch match) {
             var guild = server.client.GetGuild(server.config.guildId);
-
+            
             // Being cautious, even though EmbedIO will do this for me.
             if (guild == null)
                 return false;
 
             var role = guild.GetRole(match.role);
             var users = guild.Users;
+            
             var nameMatches = NameMatcher
                 .matchNames(match.details, users)
                 .Where(result => result.level == NameMatcher.MatchLevel.NoMatch)
