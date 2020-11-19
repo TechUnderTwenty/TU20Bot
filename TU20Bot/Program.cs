@@ -25,7 +25,7 @@ namespace TU20Bot {
             if (args.FirstOrDefault() == "purge")
                 File.Delete(Config.defaultPath);
             
-            config = Config.load(Config.defaultPath) ?? Config.configure(args);
+            config = Config.load() ?? Config.configure(args);
             
             // Start database...
             if (config.mongoUrl != null) {
@@ -36,7 +36,6 @@ namespace TU20Bot {
             }
 
             client = new Client(config, database);
-            server = new Server(client);
             handler = new Handler(client);
 
             await handler.init();
@@ -45,6 +44,7 @@ namespace TU20Bot {
             await client.StartAsync();
 
             // Run server on another thread...
+            server = new Server(client);
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
             // Don't exit.

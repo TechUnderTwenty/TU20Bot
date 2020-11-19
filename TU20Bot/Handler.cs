@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -8,7 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+
 using MongoDB.Driver;
+
+using TU20Bot.Models;
 using TU20Bot.Support;
 using TU20Bot.Configuration;
 
@@ -83,7 +87,7 @@ namespace TU20Bot {
                             $"```\n{execution.Exception.Message}\n\n{execution.Exception.StackTrace}\n```");
                     } else {
                         await userMessage.Channel.SendMessageAsync(
-                            "Halt We've hit an error.\n```\n{result.ErrorReason}\n```");
+                            $"Halt We've hit an error.\n```\n{result.ErrorReason}\n```");
                     }
                 }
             }
@@ -121,15 +125,39 @@ namespace TU20Bot {
             await channel.SendMessageAsync(
                 greetings[random.Next(0, greetings.Count)] + $" <@{user.Id}>");
 
+            string email = null;
+
+            // Check database for users that have registered their email previously.
+            if (client.database != null) {
+                var collection = client.database.GetCollection<UserModel>(UserModel.collectionName);
+
+                var emailModel = await collection.Find(
+                    Builders<UserModel>.Filter.Eq(x => x.discordId, user.Id.ToString())
+                ).Limit(1).FirstOrDefaultAsync();
+
+                if (emailModel != null)
+                    email = emailModel.email;
+            }
+
             // Match
-            var roles = client.config.matches
-                .Select(x => new { x.role, value = NameMatcher.matchName(user, x.details) }) // run name match
-                .Where(x => x.value.level != NameMatcher.MatchLevel.NoMatch) // drop people who didn't match
-                .Select(x => user.Guild.GetRole(x.role)) // grab the roles
+            var nameMatches = client.config.matches
+                .Where(x => NameMatcher.matchName(user, x.details).level != NameMatcher.MatchLevel.NoMatch) // drop
+                .Select(x => x.role); // grab roles
+
+            var emailMatches = email == null ? new List<ulong>() : client.config.matches
+                .Where(x => x.details.Any(y => y.email == email)) // check for email
+                .Select(x => x.role); // grab roles
+
+            var guild = user.Guild;
+
+            var roles = nameMatches
+                .Concat(emailMatches)
+                .Distinct()
+                .Select(x => guild.GetRole(x))
                 .ToList();
 
             // Add the roles.
-            if (roles.Any()) 
+            if (roles.Any())
                 await user.AddRolesAsync(roles);
         }
 

@@ -2,13 +2,16 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Net;
+
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
 using EmbedIO;
 using EmbedIO.Routing;
-using NPOI.SS.Formula.Eval;
+
+using MongoDB.Driver;
+
+using TU20Bot.Models;
 using TU20Bot.Support;
 using TU20Bot.Configuration.Payloads;
 
@@ -21,23 +24,47 @@ namespace TU20Bot.Configuration.Controllers {
 
         private async Task<bool> evaluateMatch(UserMatch match) {
             var guild = server.client.GetGuild(server.config.guildId);
-            
+
             // Being cautious, even though EmbedIO will do this for me.
             if (guild == null)
                 return false;
 
             var role = guild.GetRole(match.role);
             var users = guild.Users;
-            var results = NameMatcher
+            var nameMatches = NameMatcher
                 .matchNames(match.details, users)
-                .Where(result => result.level == NameMatcher.MatchLevel.NoMatch);
+                .Where(result => result.level == NameMatcher.MatchLevel.NoMatch)
+                .Select(x => x.id);
+            
+            IEnumerable<ulong> emailMatches = null;
 
+            if (server.client.database != null) {
+                var collection = server.client.database
+                    .GetCollection<UserModel>(UserModel.collectionName);
+
+                var allEmails = match.details
+                    .Select(x => x.email)
+                    .Where(x => x != null);
+
+                var emailList = await collection
+                    .Find(Builders<UserModel>.Filter.In(x => x.email, allEmails))
+                    .ToListAsync();
+
+                emailMatches = emailList.Select(x => ulong.Parse(x.discordId));
+            }
+
+            var results = nameMatches;
+
+            if (emailMatches != null) {
+                results = results.Concat(emailMatches).Distinct();
+            }
+            
             if (role == null || users == null)
                 return false;
 
             // Assign roles to people who matched. This is blocking right now.
             foreach (var result in results) {
-                var user = guild.GetUser(result.id);
+                var user = guild.GetUser(result);
 
                 // Just in case...
                 if (user == null)
