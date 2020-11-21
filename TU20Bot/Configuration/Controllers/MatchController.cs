@@ -32,21 +32,25 @@ namespace TU20Bot.Configuration.Controllers {
             var role = guild.GetRole(match.role);
             var users = guild.Users;
             
+            // Attempt to match all the users with an approximate name-match algorithm
             var nameMatches = NameMatcher
-                .matchNames(match.details, users)
-                .Where(result => result.level == NameMatcher.MatchLevel.NoMatch)
+                .matchNames(match.userDetailInformation, users)
+                .Where(result => result.level != NameMatcher.MatchLevel.NoMatch)
                 .Select(x => x.id);
             
             IEnumerable<ulong> emailMatches = null;
 
+            // If possible, query the database for users with mathcing emails that are already in our database 
             if (server.client.database != null) {
                 var collection = server.client.database
                     .GetCollection<UserModel>(UserModel.collectionName);
-
-                var allEmails = match.details
+                
+                // Get all non-null emails from the match
+                var allEmails = match.userDetailInformation
                     .Select(x => x.email)
                     .Where(x => x != null);
 
+                // Find all emails in the database that are provided in the match 
                 var emailList = await collection
                     .Find(Builders<UserModel>.Filter.In(x => x.email, allEmails))
                     .ToListAsync();
@@ -55,7 +59,7 @@ namespace TU20Bot.Configuration.Controllers {
             }
 
             var results = nameMatches;
-
+            
             if (emailMatches != null) {
                 results = results.Concat(emailMatches).Distinct();
             }
@@ -81,12 +85,12 @@ namespace TU20Bot.Configuration.Controllers {
         public IEnumerable<object> getMatches() {
             var guild = server.client.GetGuild(server.client.config.guildId);
             
-            return server.config.matches.Select(x => new {
+            return server.config.userRoleMatches.Select(x => new {
                 role = new {
                     id = x.role.ToString(),
                     name = guild.GetRole(x.role)?.Name
                 },
-                details = x.details.Select(y => new {
+                details = x.userDetailInformation.Select(y => new {
                     y.email,
                     y.firstName,
                     y.lastName
@@ -104,8 +108,8 @@ namespace TU20Bot.Configuration.Controllers {
             }
             
             // Add it to the config for future matches.
-            var index = server.config.matches.Count;
-            server.config.matches.Add(match);
+            var index = server.config.userRoleMatches.Count;
+            server.config.userRoleMatches.Add(match);
 
             return index;
         }
@@ -294,13 +298,13 @@ namespace TU20Bot.Configuration.Controllers {
             }
 
             // Replace the previous details object.
-            var match = server.config.matches[index];
-            match.details = details;
+            var match = server.config.userRoleMatches[index];
+            match.userDetailInformation = details;
 
             // :cry: I made it!!!
             if (await evaluateMatch(match)) {
                 return new {
-                    details = match.details.Select(x => new {
+                    details = match.userDetailInformation.Select(x => new {
                         x.email,
                         x.firstName,
                         x.lastName
@@ -321,13 +325,13 @@ namespace TU20Bot.Configuration.Controllers {
                 return;
             }
             
-            server.config.matches[index] = match;
+            server.config.userRoleMatches[index] = match;
         }
 
         // To lazy to make this remove roles... just delete the role yourself.
         [Route(HttpVerbs.Delete, "/match/{index}")]
         public void deleteMatch(int index) {
-            server.config.matches.RemoveAt(index);
+            server.config.userRoleMatches.RemoveAt(index);
         }
     }
 }

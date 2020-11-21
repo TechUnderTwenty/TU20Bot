@@ -40,7 +40,7 @@ namespace TU20Bot.Configuration {
     }
 
     public class UserMatch {
-        public List<UserDetails> details = new List<UserDetails>();
+        public List<UserDetails> userDetailInformation = new List<UserDetails>();
         public ulong role;
     }
 
@@ -64,7 +64,7 @@ namespace TU20Bot.Configuration {
             "Greetings"
         };
 
-        public readonly List<UserMatch> matches = new List<UserMatch>();
+        public readonly List<UserMatch> userRoleMatches = new List<UserMatch>();
         public readonly List<LogEntry> logs = new List<LogEntry>();
         public readonly List<FactoryDescription> factories = new List<FactoryDescription>();
 

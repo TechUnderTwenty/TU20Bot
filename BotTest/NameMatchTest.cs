@@ -43,9 +43,9 @@ namespace BotTest {
             config = new Config();
             client = new Client(config, null);
 
-            config.matches.Add(new UserMatch {
+            config.userRoleMatches.Add(new UserMatch {
                 role = 0,
-                details = CSVReader.readFile()
+                userDetailInformation = CSVReader.readFile()
             });
 
             // Logging in the bot
@@ -66,7 +66,7 @@ namespace BotTest {
             var users = guild.Users;
 
             //Sending a message to a specified channel in a specified server using the algorithm function
-            NameMatcher.matchNames(config.matches.SelectMany(x => x.details), users);
+            NameMatcher.matchNames(config.userRoleMatches.SelectMany(x => x.userDetailInformation), users);
 
             // TODO: Add thorough checks to verify the algorithm is working as intended
         }

@@ -42,8 +42,8 @@ namespace TU20Bot.Commands {
             }
 
             // TODO: This linq query should be done with MongoDB, but I'm sleepy and I want to do it later.
-            var roles = config.matches
-                .Where(x => x.details.Any(y => y.email == email)) // find any matches that have matching emails
+            var roles = config.userRoleMatches
+                .Where(x => x.userDetailInformation.Any(y => y.email == email)) // find any matches that have matching emails
                 .Select(x => guild.GetRole(x.role)) // grab the roles
                 .ToList();
 

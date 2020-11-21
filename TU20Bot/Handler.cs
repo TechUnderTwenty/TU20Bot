@@ -139,13 +139,14 @@ namespace TU20Bot {
                     email = emailModel.email;
             }
 
-            // Match
-            var nameMatches = client.config.matches
-                .Where(x => NameMatcher.matchName(user, x.details).level != NameMatcher.MatchLevel.NoMatch) // drop
+            // Try to match the new user by their name to any existing roleMatch lists
+            var nameMatches = client.config.userRoleMatches
+                .Where(x => NameMatcher.matchName(user, x.userDetailInformation).level != NameMatcher.MatchLevel.NoMatch) // drop
                 .Select(x => x.role); // grab roles
 
-            var emailMatches = email == null ? new List<ulong>() : client.config.matches
-                .Where(x => x.details.Any(y => y.email == email)) // check for email
+            // If the email has been found, find all role matches to which the email belongs to
+            var emailMatches = (email == null) ? new List<ulong>() : client.config.userRoleMatches
+                .Where(x => x.userDetailInformation.Any(user => user.email == email)) // check for email
                 .Select(x => x.role); // grab roles
 
             var guild = user.Guild;

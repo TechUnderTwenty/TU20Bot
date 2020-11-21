@@ -25,7 +25,7 @@ namespace BotTest {
         private static readonly List<UserMatch> records = new List<UserMatch> {
             new UserMatch {
                 role = 0,
-                details = new List<UserDetails> {
+                userDetailInformation = new List<UserDetails> {
                     new UserDetails {
                         firstName = "john1",
                         lastName = "Doe1",
@@ -69,7 +69,7 @@ namespace BotTest {
             // await EmailVerification.saveUnverifiedEmail(dbComm, 1, "johndoe@examplemail.com");
             
             records.Add(new UserMatch {
-                details = new List<UserDetails> {
+                userDetailInformation = new List<UserDetails> {
                     new UserDetails {
                         firstName = "john",
                         lastName = "Doe",

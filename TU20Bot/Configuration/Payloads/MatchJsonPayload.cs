@@ -19,7 +19,7 @@ namespace TU20Bot.Configuration.Payloads {
         public UserMatch toUserMatch() {
             return new UserMatch {
                 role = ulong.Parse(role),
-                details = details.Select(x => new UserDetails {
+                userDetailInformation = details.Select(x => new UserDetails {
                     email = x.email,
                     firstName = x.firstName,
                     lastName = x.lastName
