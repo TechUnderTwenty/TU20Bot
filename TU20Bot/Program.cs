@@ -5,56 +5,57 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
+
+using MongoDB.Driver;
+
 using TU20Bot.Configuration;
 
 namespace TU20Bot {
     internal class Program {
-        private readonly string token;
-
         private Client client;
         private Config config;
         private Server server;
         private Handler handler;
+        private MongoClient mongo;
+        private IMongoDatabase database;
 
         // Initializes Discord.Net
-        private async Task start() {
-            config = Config.load(Config.defaultPath) ?? new Config();
+        private async Task start(string[] args) {
+            // Convenience...
+            if (args.FirstOrDefault() == "purge")
+                File.Delete(Config.defaultPath);
+            
+            config = Config.load() ?? Config.configure(args);
+            
+            // Start database...
+            if (config.mongoUrl != null) {
+                mongo = new MongoClient(config.mongoUrl);
+                database = mongo.GetDatabase(config.databaseName);
+            } else {
+                Console.WriteLine("Skipping database initialization, no URL provided...");
+            }
 
-            client = new Client(config);
-            server = new Server(client);
+            client = new Client(config, database);
+            
             handler = new Handler(client);
 
             await handler.init();
 
-            await client.LoginAsync(TokenType.Bot, token);
+            await client.LoginAsync(TokenType.Bot, config.token);
             await client.StartAsync();
 
-            // Run server on another thread.
+            // Run server on another thread...
+            server = new Server(client);
             new Thread(() => server.RunAsync().GetAwaiter().GetResult()).Start();
 
+            // Don't exit.
             await Task.Delay(-1);
         }
 
-        private Program(string token) {
-            this.token = token;
-        }
-
-        // Entry
+        // Program entry.
         public static void Main(string[] args) {
-            // Init command with token.
-            if (args.Length >= 2 && args[0] == "init") {
-                File.WriteAllText("token.txt", args[1]);
-            }
-
-            // Start bot with token from "token.txt" in working folder.
-            try {
-                var token = File.ReadAllText("token.txt").Trim();
-                new Program(token).start().GetAwaiter().GetResult();
-            } catch (IOException) {
-                Console.WriteLine("Could not read from token.txt. Did you run `init <token>`?");
-            }
-
-
+            // Pass control to async method.
+            new Program().start(args).GetAwaiter().GetResult();
         }
     }
 }

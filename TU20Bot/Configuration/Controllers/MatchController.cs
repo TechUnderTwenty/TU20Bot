@@ -9,6 +9,10 @@ using NPOI.XSSF.UserModel;
 using EmbedIO;
 using EmbedIO.Routing;
 
+using MongoDB.Driver;
+
+using TU20Bot.Models;
+using TU20Bot.Support;
 using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration.Controllers {
@@ -17,17 +21,76 @@ namespace TU20Bot.Configuration.Controllers {
             public int columnNumber;
             public int rowNumber;
         }
+
+        private async Task<bool> evaluateMatch(UserMatch match) {
+            var guild = server.client.GetGuild(server.config.guildId);
+            
+            // Being cautious, even though EmbedIO will do this for me.
+            if (guild == null)
+                return false;
+
+            var role = guild.GetRole(match.role);
+            var users = guild.Users;
+            
+            // Attempt to match all the users with an approximate name-match algorithm
+            var nameMatches = NameMatcher
+                .matchNames(match.userDetailInformation, users)
+                .Where(result => result.level != NameMatcher.MatchLevel.NoMatch)
+                .Select(x => x.id);
+            
+            IEnumerable<ulong> emailMatches = null;
+
+            // If possible, query the database for users with mathcing emails that are already in our database 
+            if (server.client.database != null) {
+                var collection = server.client.database
+                    .GetCollection<UserModel>(UserModel.collectionName);
+                
+                // Get all non-null emails from the match
+                var allEmails = match.userDetailInformation
+                    .Select(x => x.email)
+                    .Where(x => x != null);
+
+                // Find all emails in the database that are provided in the match 
+                var emailList = await collection
+                    .Find(Builders<UserModel>.Filter.In(x => x.email, allEmails))
+                    .ToListAsync();
+
+                emailMatches = emailList.Select(x => ulong.Parse(x.discordId));
+            }
+
+            var results = nameMatches;
+            
+            if (emailMatches != null) {
+                results = results.Concat(emailMatches).Distinct();
+            }
+            
+            if (role == null || users == null)
+                return false;
+
+            // Assign roles to people who matched. This is blocking right now.
+            foreach (var result in results) {
+                var user = guild.GetUser(result);
+
+                // Just in case...
+                if (user == null)
+                    continue;
+
+                await user.AddRoleAsync(role);
+            }
+
+            return true;
+        }
         
         [Route(HttpVerbs.Get, "/match")]
         public IEnumerable<object> getMatches() {
             var guild = server.client.GetGuild(server.client.config.guildId);
             
-            return server.config.matches.Select(x => new {
+            return server.config.userRoleMatches.Select(x => new {
                 role = new {
                     id = x.role.ToString(),
                     name = guild.GetRole(x.role)?.Name
                 },
-                details = x.details.Select(y => new {
+                details = x.userDetailInformation.Select(y => new {
                     y.email,
                     y.firstName,
                     y.lastName
@@ -37,18 +100,18 @@ namespace TU20Bot.Configuration.Controllers {
 
         [Route(HttpVerbs.Post, "/match")]
         public async Task<int> createMatch() {
-            var match = await HttpContext.GetRequestDataAsync<MatchJsonPayload>();
+            var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
 
-            server.config.matches.Add(new UserMatch {
-                role = ulong.Parse(match.role),
-                details = match.details.Select(x => new UserDetails {
-                    email = x.email,
-                    firstName = x.firstName,
-                    lastName = x.lastName
-                }).ToList()
-            });
+            if (!await evaluateMatch(match)) {
+                HttpContext.Response.StatusCode = 500;
+                return -1;
+            }
+            
+            // Add it to the config for future matches.
+            var index = server.config.userRoleMatches.Count;
+            server.config.userRoleMatches.Add(match);
 
-            return server.config.matches.Count - 1;
+            return index;
         }
 
         // Convenience for MatchController.editData(). Fetches data from a NPOI row.
@@ -80,7 +143,7 @@ namespace TU20Bot.Configuration.Controllers {
         // Very long method, seems like that's the case with spreadsheets.
         // I apologize for the next person who has to edit this method.
         [Route(HttpVerbs.Put, "/match/{index}/data")]
-        public object editData(int index) {
+        public async Task<object> editData(int index) {
             var workbook = new XSSFWorkbook(HttpContext.Request.InputStream);
 
             // Spreadsheet parsing can go wrong quickly, I'm trying to make good error messages to catch that.
@@ -155,7 +218,7 @@ namespace TU20Bot.Configuration.Controllers {
                         }.Where(x => x != null));
 
                         return new {
-                            error = $"Row conflict detected, headers were split across multiple rows ({errorMessage})."
+                            error = $"Headers were split across multiple rows ({errorMessage})."
                         };
                     }
 
@@ -235,36 +298,40 @@ namespace TU20Bot.Configuration.Controllers {
             }
 
             // Replace the previous details object.
-            var match = server.config.matches[index];
-            match.details = details;
+            var match = server.config.userRoleMatches[index];
+            match.userDetailInformation = details;
 
             // :cry: I made it!!!
-            return new {
-                details = match.details.Select(x => new {
-                    x.email,
-                    x.firstName,
-                    x.lastName
-                })
-            };
+            if (await evaluateMatch(match)) {
+                return new {
+                    details = match.userDetailInformation.Select(x => new {
+                        x.email,
+                        x.firstName,
+                        x.lastName
+                    })
+                };
+            }
+            
+            HttpContext.Response.StatusCode = 500;
+            return null;
         }
 
         [Route(HttpVerbs.Put, "/match/{index}")]
         public async Task editMatch(int index) {
-            var match = await HttpContext.GetRequestDataAsync<MatchJsonPayload>();
+            var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
+
+            if (!await evaluateMatch(match)) {
+                HttpContext.Response.StatusCode = 500;
+                return;
+            }
             
-            server.config.matches[index] = new UserMatch {
-                role = ulong.Parse(match.role),
-                details = match.details.Select(x => new UserDetails {
-                    email = x.email,
-                    firstName = x.firstName,
-                    lastName = x.lastName
-                }).ToList()
-            };
+            server.config.userRoleMatches[index] = match;
         }
 
+        // To lazy to make this remove roles... just delete the role yourself.
         [Route(HttpVerbs.Delete, "/match/{index}")]
         public void deleteMatch(int index) {
-            server.config.matches.RemoveAt(index);
+            server.config.userRoleMatches.RemoveAt(index);
         }
     }
 }

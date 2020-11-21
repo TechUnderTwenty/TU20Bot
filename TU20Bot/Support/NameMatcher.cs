@@ -1,24 +1,32 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Discord.Commands;
+﻿using System.Linq;
+using System.Collections.Generic;
+
 using Discord.WebSocket;
 
 using TU20Bot.Configuration;
 
-namespace TU20Bot.Commands {
-    public class NameMatch : ModuleBase<SocketCommandContext> {
+namespace TU20Bot.Support {
+    public static class NameMatcher {
         public enum MatchLevel {
             NoMatch,
-            CloseMatch,
+            PartialMatch,
             CompleteMatch
         }
 
         public class MatchResult {
             public MatchLevel level;
+            
+            public ulong id;
+            public string fullName;
+            
             public List<string> noSpacesMatch;
             public List<string> lastNameMatch;
-            public SocketGuildUser user;
-            public string fullName;
+
+            public MatchResult withLevel(MatchLevel value) {
+                level = value;
+
+                return this;
+            }
         }
 
         public static List<MatchResult> matchNames(
@@ -32,25 +40,24 @@ namespace TU20Bot.Commands {
         public static MatchResult matchName(
             SocketGuildUser user, IEnumerable<UserDetails> details, string name = null) {
             var fullName = name ?? user.Nickname ?? user.Username;
-
-            var matchResult = new MatchResult {
-                user = user,
-                fullName = fullName,
-                level = MatchLevel.CloseMatch,
-
-                noSpacesMatch = new List<string>(),
-                lastNameMatch = new List<string>()
+            
+            var noSpacesMatch = new List<string>();
+            var lastNameMatch = new List<string>();
+            
+            var result = new MatchResult {
+                level = MatchLevel.CompleteMatch,
+                noSpacesMatch = noSpacesMatch,
+                lastNameMatch = lastNameMatch,
+                id = user.Id,
+                fullName = fullName
             };
 
             var spaceIndex = fullName.LastIndexOf(' ');
 
             foreach (var detail in details) {
                 // If a user doesn't have a first or last name in the server
-                if (spaceIndex <= 0) {
-                    if (compare(detail.fullNameNoSpace, fullName, false)) {
-                        matchResult.noSpacesMatch.Add(detail.fullNameNoSpace);
-                    }
-                }
+                if (spaceIndex <= 0 && compareNames(detail.fullName, fullName) != MatchLevel.NoMatch)
+                    noSpacesMatch.Add(detail.fullName);
 
                 /*
                  * If a user has both first and last names in the server
@@ -65,40 +72,41 @@ namespace TU20Bot.Commands {
                     var lastName = fullName.Substring(spaceIndex + 1);
 
                     // Checking if the last names match
-                    if (!compare(detail.lastName, lastName, true))
+                    if (compareNames(detail.lastName, lastName) != MatchLevel.CompleteMatch)
                         continue;
                     
                     // Checking if the first names match
-                    if (compare(detail.firstName, firstName, false)) {
-                        matchResult.level = MatchLevel.CompleteMatch;
-                        return matchResult;
-                    }
+                    if (compareNames(detail.firstName, firstName) != MatchLevel.NoMatch)
+                        return result.withLevel(MatchLevel.CompleteMatch);
 
-                    matchResult.lastNameMatch.Add(detail.firstName + " " + detail.lastName);
+                    lastNameMatch.Add(detail.firstName + " " + detail.lastName);
                 }
             }
 
-            if (matchResult.lastNameMatch.Count == 0 && matchResult.noSpacesMatch.Count == 0)
-                matchResult.level = MatchLevel.NoMatch;
-            
-            return matchResult;
+            return result.withLevel(
+                lastNameMatch.Any() || noSpacesMatch.Any() 
+                    ? MatchLevel.PartialMatch
+                    : MatchLevel.NoMatch);
         }
 
         /// <summary>
         /// Compares two name strings
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="matchName"></param>
-        /// <param name="fullMatch">If true, then match for equivalency, otherwise match if contains</param>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
         /// <returns></returns>
-        private static bool compare(string name, string matchName, bool fullMatch) {
-            // For last name since last name should be exactly the same
-            if (fullMatch)
-                return name.Replace(" ", "") == matchName.Replace(" ", "");
+        private static MatchLevel compareNames(string first, string second) {
+            // Drop any spaces in inputs.
+            var a = first.Replace(" ", "");
+            var b = second.Replace(" ", "");
 
-            // For first name since first name can be different from the one provided
-            return name.Replace(" ", "").Contains(matchName.Replace(" ", ""))
-                   || matchName.Replace(" ", "").Contains(name.Replace(" ", ""));
+            if (a == b)
+                return MatchLevel.CompleteMatch;
+
+            if (a.Contains(b) || b.Contains(a))
+                return MatchLevel.PartialMatch;
+
+            return MatchLevel.NoMatch;
         }
     }
 }
