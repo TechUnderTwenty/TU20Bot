@@ -9,7 +9,7 @@ using Discord;
 
 using TU20Bot.Configuration.Payloads;
 
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class DiscordController : ServerController {
         [Route(HttpVerbs.Put, "/discord/server")]
         public async Task setServer() {
@@ -42,6 +42,16 @@ namespace TU20Bot.Configuration {
                 .Select(x => new { id = x.Id.ToString(), name = x.Name });
 
             return y;
+        }
+
+        [Route(HttpVerbs.Get, "/discord/roles")]
+        public IEnumerable<object> getRoles() {
+            var guild = server.client.GetGuild(server.config.guildId);
+
+            return guild.Roles.Select(x => new {
+                id = x.Id.ToString(),
+                name = x.Name
+            });
         }
     }
 }

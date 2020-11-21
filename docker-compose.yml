@@ -1,6 +1,28 @@
-version: '2.0'
+version: '3.0'
+
+volumes:
+  database-data:
+
 services:
+  db:
+    image: mongo
+    environment:
+      MONGO_INITDB_DATABASE: tu20bot
+    volumes:
+      - ./database-data:/data/db
+
   tu20bot:
     build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      tu20_mongodb_url: mongodb://db
+      tu20_database_name: tu20bot
+
+  config:
+    image: tu20bot_config
     ports:
-      - 3000:3000    
+      - 8080:8080
+    depends_on:
+      - tu20bot

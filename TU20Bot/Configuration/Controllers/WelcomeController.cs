@@ -2,14 +2,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using Discord;
-
 using EmbedIO;
 using EmbedIO.Routing;
 
 using TU20Bot.Configuration.Payloads;
 
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class WelcomeController : ServerController {
         [Route(HttpVerbs.Get, "/welcome/channel")]
         public string getWelcomeChannel() {

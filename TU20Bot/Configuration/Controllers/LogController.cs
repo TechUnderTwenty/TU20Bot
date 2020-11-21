@@ -7,9 +7,7 @@ using EmbedIO.Routing;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
-using TU20Bot.Configuration.Payloads;
-
-namespace TU20Bot.Configuration {
+namespace TU20Bot.Configuration.Controllers {
     public class LogController : ServerController {
         [Route(HttpVerbs.Get, "/logs/excel.xlsx")]
         public void getExcelLogs() {
@@ -19,7 +17,7 @@ namespace TU20Bot.Configuration {
             var bold = workbook.CreateFont();
             bold.IsBold = true;
 
-            XSSFRichTextString style(string x, IFont index) {
+            static XSSFRichTextString style(string x, IFont index) {
                 var text = new XSSFRichTextString(x);
 
                 text.ApplyFont(0, x.Length, index);
@@ -43,7 +41,7 @@ namespace TU20Bot.Configuration {
                 var user = guild.GetUser(log.id);
 
                 sheet.DefaultColumnWidth = 20;
-                
+
                 var row = sheet.CreateRow(a + 1);
                 row.CreateCell(0).SetCellValue(log.logEvent switch {
                     LogEvent.UserJoin => "Joined",
@@ -67,6 +65,7 @@ namespace TU20Bot.Configuration {
 
             return server.config.logs
                 .OrderBy(x => x.time)
+                .Reverse()
                 .Select(x => new {
                     type = x.logEvent switch {
                         LogEvent.UserJoin => "join",
@@ -76,7 +75,7 @@ namespace TU20Bot.Configuration {
                     id = x.id.ToString(),
                     joinDate = x.time,
                     username = x.name,
-                    discriminator = x.discriminator,
+                    x.discriminator,
                     nickname = guild.GetUser(x.id)?.Nickname
                 });
         }
