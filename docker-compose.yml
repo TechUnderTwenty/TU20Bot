@@ -5,13 +5,11 @@ volumes:
 
 services:
   db:
-    image: postgres
+    image: mongo
     environment:
-      POSTGRES_USER: passportdev
-      POSTGRES_PASSWORD: test
-      POSTGRES_DB: discordbot
+      MONGO_INITDB_DATABASE: tu20bot
     volumes:
-      - database-data:/var/lib/postgresql/data
+      - ./database-data:/data/db
 
   tu20bot:
     build: .
@@ -20,6 +18,8 @@ services:
       - db
     environment:
       ISCONTAINER: "TRUE"
+      tu20_mongodb_url: mongodb://db
+      tu20_database_name: tu20bot
 
   config:
     image: tu20bot_config
