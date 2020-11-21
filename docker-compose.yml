@@ -17,7 +17,6 @@ services:
     depends_on:
       - db
     environment:
-      ISCONTAINER: "TRUE"
       tu20_mongodb_url: mongodb://db
       tu20_database_name: tu20bot
 
