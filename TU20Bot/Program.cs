@@ -38,9 +38,9 @@ namespace TU20Bot {
             client = new Client(config, database);
             
             handler = new Handler(client);
-
+            
             await handler.init();
-
+            
             await client.LoginAsync(TokenType.Bot, config.token);
             await client.StartAsync();
 

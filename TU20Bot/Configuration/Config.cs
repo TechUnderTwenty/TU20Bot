@@ -59,12 +59,14 @@ namespace TU20Bot.Configuration {
     public class Config {
         private const string tokenVariableName = "tu20_bot_token";
         private const string mongoVariableName = "tu20_mongodb_url";
+        private const string jwtSecretVariableName = "tu20_jwt_secret";
         private const string databaseVariableName = "tu20_database_name";
 
         private const string defaultDatabaseName = "tu20bot";
         
         public string token;
         public string mongoUrl;
+        public string jwtSecret;
         public string databaseName = defaultDatabaseName;
         
         public const string defaultPath = "config.xml";
@@ -101,8 +103,9 @@ namespace TU20Bot.Configuration {
             var environmentToken = Environment.GetEnvironmentVariable(tokenVariableName);
             var environmentMongo = Environment.GetEnvironmentVariable(mongoVariableName);
             var environmentDatabase = Environment.GetEnvironmentVariable(databaseVariableName);
+            var environmentJwtSecret = Environment.GetEnvironmentVariable(jwtSecretVariableName);
 
-            if (string.IsNullOrEmpty(environmentToken))
+            if (string.IsNullOrEmpty(environmentToken) || string.IsNullOrEmpty(environmentJwtSecret))
                 return null;
             
             Console.WriteLine("Configuring from environment variables...");
@@ -110,6 +113,7 @@ namespace TU20Bot.Configuration {
             return new Config {
                 token = environmentToken,
                 mongoUrl = environmentMongo?.NullIfEmpty(),
+                jwtSecret = environmentJwtSecret,
                 databaseName = environmentDatabase?.NullIfEmpty() ?? defaultDatabaseName
             };
         }
@@ -139,6 +143,13 @@ namespace TU20Bot.Configuration {
                 Console.WriteLine("Discord Bot Token is required. Exiting...");
                 Environment.Exit(1);
             }
+            
+            Console.Write(" * JWT Secret Key (required): ");
+            var secret = Console.ReadLine();
+            if (string.IsNullOrEmpty(secret)) {
+                Console.WriteLine("JWT Secret Key is required. Exiting...");
+                Environment.Exit(1);
+            }
 
             Console.Write(" * MongoDB URL (optional): ");
             var databaseUrl = Console.ReadLine()?.NullIfEmpty();
@@ -153,6 +164,7 @@ namespace TU20Bot.Configuration {
             var result = new Config {
                 token = token,
                 mongoUrl = databaseUrl,
+                jwtSecret = secret,
                 databaseName = databaseName ?? defaultDatabaseName
             };
             
