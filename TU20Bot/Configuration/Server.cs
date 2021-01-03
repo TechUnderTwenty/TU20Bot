@@ -32,6 +32,7 @@ namespace TU20Bot.Configuration {
                 .WithController(createFactory<MatchController>());
 
             this
+                .WithWebApi("/admin", m => m.WithController(createFactory<AuthenticationController>()))
                 .WithLocalSessionManager()
                 .WithModule(new AuthorizationModule("/", this, api));
         }

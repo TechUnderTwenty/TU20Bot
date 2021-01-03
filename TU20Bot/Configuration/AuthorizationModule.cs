@@ -12,22 +12,19 @@ using Newtonsoft.Json;
 namespace TU20Bot.Configuration {
     // I kinda hate Swan.Formatters, I'm going to use Newtonsoft.
     public class AuthorizationPayload {
-        [JsonProperty]
-        public string issuerName { get; set; }
         
         [JsonProperty]
         public string fullName { get; set; }
-        
-        [JsonProperty]
-        public List<string> permissions { get; set; }
 
-        public bool isValid => issuerName != null && fullName != null && permissions != null;
+        [JsonProperty]
+        public DateTime validUntil { get; set; }
     }
     
     public class AuthorizationModule : WebModuleBase {
         private readonly Server server;
         private readonly IWebModule module;
-        
+        private const string bearerPrefix = "Bearer ";
+
         protected override async Task OnRequestAsync(IHttpContext context) {
             var authorization = context.Request.Headers["Authorization"];
 
@@ -37,13 +34,11 @@ namespace TU20Bot.Configuration {
                 writer.WriteLine(text);
                 writer.Flush();
             }
-            
+
             if (string.IsNullOrEmpty(authorization)) {
                 error("ERROR: No authorization token provided.");
                 return;
             }
-
-            const string bearerPrefix = "Bearer ";
             
             // I completely do not understand this pattern, and I want someone to tell me why. - Taylor
             if (!authorization.StartsWith(bearerPrefix)) {
@@ -51,6 +46,7 @@ namespace TU20Bot.Configuration {
                 return;
             }
 
+            // Extract the incoming JWT Token from the header
             var token = authorization.Substring(bearerPrefix.Length);
 
             Exception moduleError = null;
@@ -64,27 +60,31 @@ namespace TU20Bot.Configuration {
                     return;
                 }
 
+                // Deserialize the JWT Token into an AuthorizationPayload object
                 var payload = JsonConvert.DeserializeObject<AuthorizationPayload>(result);
 
-                if (payload == null || !payload.isValid) {
+                if (payload == null) {
                     error("ERROR: Invalid payload.");
                     return;
                 }
 
-                if (!payload.permissions.Contains("admin")) {
-                    error("ERROR: Missing permissions.");
+                // If the token is expired
+                if (DateTime.Now.CompareTo(payload.validUntil) > 0) {
+                    error("ERROR: Expired token.");
                     return;
                 }
 
                 Console.WriteLine(
-                    "[Authorization] Access from {0} allowed by {1} to \"{2}\".",
-                    payload.fullName, payload.issuerName, context.Request.Url);
+                    "[Authorization] Access for {0} to \"{1}\".",
+                    payload.fullName, context.Request.Url);
 
+                // Direct the module to handle the request
                 try {
                     await module.HandleRequestAsync(context);
                 } catch (Exception e) {
                     moduleError = e;
                 }
+
             } catch (IntegrityException) {
                 error("ERROR: Invalid JWT signature.");
             } catch (Exception) {
