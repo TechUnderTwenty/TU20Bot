@@ -10,8 +10,7 @@ namespace TU20Bot.Configuration.Controllers {
     public class AuthenticationController: ServerController {
         public const int HASH_SIZE = 24;
         private const int ITERATIONS = 1000000;
-        private static readonly string tempSalt = Environment.GetEnvironmentVariable("TEMPSALT");
-        private static readonly string tempSalt_default = "TEMPSALT";
+        private static readonly string tempSalt = Environment.GetEnvironmentVariable("TEMPSALT") ?? "TEMPSALT";
 
         [Route(HttpVerbs.Post, "/login")]
         public string Login([QueryField] string password) {
