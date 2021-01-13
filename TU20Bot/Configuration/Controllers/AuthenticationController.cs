@@ -16,7 +16,7 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Post, "/login")]
         public async Task<string> Login([QueryField] string username, [QueryField] string password) {
 
-            var user = await server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).FindAsync(_user => _user.username.Equals(username.ToLower()));
+            var user = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).Find(_user => _user.username.Equals(username.ToLower()));
 
             if (!user.Any()) {
                 throw HttpException.Unauthorized();
