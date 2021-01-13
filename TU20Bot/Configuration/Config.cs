@@ -6,7 +6,6 @@ using System.Xml.Serialization;
 using System.Collections.Generic;
 
 using EmbedIO.Utilities;
-using TU20Bot.Configuration.Controllers;
 
 namespace TU20Bot.Configuration {
     public enum LogEvent {
@@ -62,7 +61,6 @@ namespace TU20Bot.Configuration {
         private const string mongoVariableName = "tu20_mongodb_url";
         private const string jwtSecretVariableName = "tu20_jwt_secret";
         private const string databaseVariableName = "tu20_database_name";
-        private const string consolePasswordVariableName = "tu20_console_password";
 
         private const string defaultDatabaseName = "tu20bot";
         
@@ -70,7 +68,6 @@ namespace TU20Bot.Configuration {
         public string mongoUrl;
         public string jwtSecret;
         public string databaseName = defaultDatabaseName;
-        public string consolePassword;
         
         public const string defaultPath = "config.xml";
         public ulong guildId = 230737273350520834; // TU20
@@ -107,8 +104,7 @@ namespace TU20Bot.Configuration {
             var environmentMongo = Environment.GetEnvironmentVariable(mongoVariableName);
             var environmentDatabase = Environment.GetEnvironmentVariable(databaseVariableName);
             var environmentJwtSecret = Environment.GetEnvironmentVariable(jwtSecretVariableName);
-            var consolePassword = Environment.GetEnvironmentVariable(consolePasswordVariableName);
-
+            
             if (string.IsNullOrEmpty(environmentToken) || string.IsNullOrEmpty(environmentJwtSecret))
                 return null;
             
@@ -119,7 +115,6 @@ namespace TU20Bot.Configuration {
                 mongoUrl = environmentMongo?.NullIfEmpty(),
                 jwtSecret = environmentJwtSecret,
                 databaseName = environmentDatabase?.NullIfEmpty() ?? defaultDatabaseName,
-                consolePassword = AuthenticationController.hashPassword(consolePassword)
             };
         }
         
@@ -178,7 +173,6 @@ namespace TU20Bot.Configuration {
                 mongoUrl = databaseUrl,
                 jwtSecret = secret,
                 databaseName = databaseName ?? defaultDatabaseName,
-                consolePassword = AuthenticationController.hashPassword(password)
             };
             
             Console.Write(" * Commit this config (y/N)? ");
