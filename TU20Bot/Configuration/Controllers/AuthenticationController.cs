@@ -14,7 +14,7 @@ namespace TU20Bot.Configuration.Controllers {
     public class AuthenticationController : ServerController {
 
         [Route(HttpVerbs.Post, "/login")]
-        public async Task<string> Login([QueryField] string username, [QueryField] string password) {
+        public string Login([QueryField] string username, [QueryField] string password) {
 
             var user = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).Find(_user => _user.username.Equals(username.ToLower()));
 
@@ -27,7 +27,7 @@ namespace TU20Bot.Configuration.Controllers {
                     fullName = username,
                     validUntil = DateTime.Now.AddHours(1), // Expire in 1 hour
                     permissions = user.First().permissions
-                }, Encoding.UTF8.GetBytes(this.server.config.jwtSecret), JwsAlgorithm.HS256);
+                }, Encoding.UTF8.GetBytes(server.config.jwtSecret), JwsAlgorithm.HS256);
             }
 
             throw HttpException.Unauthorized();
