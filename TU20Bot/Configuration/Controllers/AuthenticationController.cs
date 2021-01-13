@@ -40,7 +40,8 @@ namespace TU20Bot.Configuration.Controllers {
                 throw HttpException.Forbidden();
             }
 
-            var user = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).Find(_user => _user.username.Equals(username.ToLower()));
+            var uersCollection = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
+            var user = uersCollection.Find(_user => _user.username.Equals(username.ToLower()));
 
             // If a user already exists, it is not possible to create a new user
             if (user.Any()) throw HttpException.NotAcceptable();
@@ -51,9 +52,29 @@ namespace TU20Bot.Configuration.Controllers {
             };
             _user.setPassword(password);
 
-            await server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).InsertOneAsync(_user);
+            await uersCollection.InsertOneAsync(_user);
 
             return username.ToLower();
+        }
+
+        [Route(HttpVerbs.Delete, "/delete")]
+        public async Task<string> Delete([QueryField] string username, [QueryField] string password) {
+
+            if (!AuthorizationModule.ValidatePermissions(new List<string> { "Admin" }, Request, Response, server.config.jwtSecret)) {
+                throw HttpException.Forbidden();
+            }
+
+            var usersCollection = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
+            var user = usersCollection.Find(_user => _user.username.Equals(username.ToLower()));
+
+            // If a user already exists, it is not possible to create a new user
+            if (!user.Any()) throw HttpException.NotFound();
+
+            var _user = user.First();
+            var result = await usersCollection.DeleteOneAsync(Builders<AccountModel>.Filter.Eq("id", _user.id));
+
+            if (result.DeletedCount == 1) return "Deleted";
+            throw HttpException.InternalServerError();
         }
     }
 }
