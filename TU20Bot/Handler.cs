@@ -67,6 +67,23 @@ namespace TU20Bot {
             Console.WriteLine(message.Message);
             return Task.CompletedTask;
         }
+
+        private async Task sendErrorMessage(string problem, IMessage userMessage = null) {
+            if (userMessage != null) {
+                try {
+                    await userMessage.AddReactionAsync(new Emoji("❌"));
+                } catch (Exception) { /* Oh well, what can you do. */ }
+            }
+            
+            if (client.GetChannel(client.config.errorChannelId) is IMessageChannel errorChannel) {
+                try {
+                    await errorChannel.SendMessageAsync(problem);
+                    return;
+                } catch (Exception) { /* Go back! */ }
+            }
+            
+            await Console.Error.WriteLineAsync(problem);
+        }
         
         // Called by Discord.Net when the bot receives a message.
         private async Task messageReceived(SocketMessage message) {
@@ -83,11 +100,13 @@ namespace TU20Bot {
                 if (!result.IsSuccess && result.Error != CommandError.UnknownCommand) {
                     if (showStackTrace && result.Error == CommandError.Exception 
                             && result is ExecuteResult execution) {
-                        await userMessage.Channel.SendMessageAsync(
-                            $"```\n{execution.Exception.Message}\n\n{execution.Exception.StackTrace}\n```");
+                        await sendErrorMessage(
+                            $"```\n{execution.Exception.Message}\n\n{execution.Exception.StackTrace}\n```",
+                            userMessage);
                     } else {
-                        await userMessage.Channel.SendMessageAsync(
-                            $"Halt We've hit an error.\n```\n{result.ErrorReason}\n```");
+                        await sendErrorMessage(
+                            $"Halt We've hit an error.\n```\n{result.ErrorReason}\n```",
+                            userMessage);
                     }
                 }
             }

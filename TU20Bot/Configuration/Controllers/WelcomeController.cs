@@ -20,6 +20,19 @@ namespace TU20Bot.Configuration.Controllers {
 
             server.config.welcomeChannelId = ulong.Parse(input.id);
         }
+
+        // Too lazy to move this to another endpoint/create another controller.
+        [Route(HttpVerbs.Get, "/welcome/error/channel")]
+        public string getErrorChannel() {
+            return server.config.errorChannelId.ToString();
+        }
+
+        [Route(HttpVerbs.Put, "/welcome/error/channel")]
+        public async Task setErrorChannel() {
+            var input = await HttpContext.GetRequestDataAsync<IdJsonPayload>();
+
+            server.config.errorChannelId = ulong.Parse(input.id);
+        }
         
         [Route(HttpVerbs.Get, "/welcome/messages")]
         public IEnumerable<string> getWelcomeMessages() {

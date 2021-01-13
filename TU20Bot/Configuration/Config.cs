@@ -70,6 +70,7 @@ namespace TU20Bot.Configuration {
         public const string defaultPath = "config.xml";
         public ulong guildId = 230737273350520834; // TU20
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
+        public ulong errorChannelId = 736741911150198835; // #bot-testing
 
         public List<string> welcomeMessages = new List<string> {
             "Welcome",

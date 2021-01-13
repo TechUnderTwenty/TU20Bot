@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -59,8 +60,10 @@ namespace TU20Bot.Commands {
                 await Context.Message.DeleteAsync();
             
             // Provide the user feedback.
-            var dmChannel = await Context.User.GetOrCreateDMChannelAsync();
-            await dmChannel.SendMessageAsync("You have been verified. Thanks.");
+            try {
+                var dmChannel = await Context.User.GetOrCreateDMChannelAsync();
+                await dmChannel.SendMessageAsync("You have been verified. Thanks.");
+            } catch (Exception) { /* ignore */ }
         }
     }
 }
