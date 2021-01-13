@@ -67,7 +67,6 @@ namespace TU20Bot.Configuration.Controllers {
             var usersCollection = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
             var user = usersCollection.Find(_user => _user.username.Equals(username.ToLower()));
 
-            // If a user already exists, it is not possible to create a new user
             if (!user.Any()) throw HttpException.NotFound();
 
             var _user = user.First();
