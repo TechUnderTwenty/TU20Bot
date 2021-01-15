@@ -151,13 +151,6 @@ namespace TU20Bot.Configuration {
                 Environment.Exit(1);
             }
 
-            Console.Write(" * Console Password (required): ");
-            var password = Console.ReadLine().Trim().Replace("\n", "");
-            if (string.IsNullOrEmpty(secret)) {
-                Console.WriteLine("Password is required. Exiting...");
-                Environment.Exit(1);
-            }
-            
             Console.Write(" * MongoDB URL (optional): ");
             var databaseUrl = Console.ReadLine()?.NullIfEmpty();
 

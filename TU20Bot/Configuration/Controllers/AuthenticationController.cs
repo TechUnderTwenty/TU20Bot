@@ -16,21 +16,22 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Post, "/login")]
         public string Login([QueryField] string username, [QueryField] string password) {
 
-            var user = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName).Find(_user => _user.username.Equals(username.ToLower()));
+            var user = server.client.database
+                .GetCollection<AccountModel>(AccountModel.collectionName)
+                .Find(x => x.username == username.ToLower());
 
             if (!user.Any()) {
                 throw HttpException.Unauthorized();
             }
 
-            if (user.First().checkPassword(password)) {
-                return JWT.Encode(new AuthorizationPayload {
-                    fullName = username,
-                    validUntil = DateTime.Now.AddHours(1), // Expire in 1 hour
-                    permissions = user.First().permissions
-                }, Encoding.UTF8.GetBytes(server.config.jwtSecret), JwsAlgorithm.HS256);
-            }
-
-            throw HttpException.Unauthorized();
+            if (!user.First().checkPassword(password))
+                throw HttpException.Unauthorized();
+            
+            return JWT.Encode(new AuthorizationPayload {
+                fullName = username,
+                validUntil = DateTime.Now.AddHours(1), // Expire in 1 hour
+                permissions = user.First().permissions
+            }, Encoding.UTF8.GetBytes(server.config.jwtSecret), JwsAlgorithm.HS256);
         }
 
         [Route(HttpVerbs.Post, "/create")]
