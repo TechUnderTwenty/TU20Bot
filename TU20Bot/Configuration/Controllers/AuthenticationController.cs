@@ -26,7 +26,7 @@ namespace TU20Bot.Configuration.Controllers {
 
             if (!user.First().checkPassword(password))
                 throw HttpException.Unauthorized();
-            
+
             return JWT.Encode(new AuthorizationPayload {
                 fullName = username,
                 validUntil = DateTime.Now.AddHours(1), // Expire in 1 hour
@@ -37,7 +37,7 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Post, "/create")]
         public async Task<string> Create([QueryField] string username, [QueryField] string password) {
 
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request, Response, server.config.jwtSecret)) {
+            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
                 throw HttpException.Forbidden();
             }
 
@@ -61,7 +61,7 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Delete, "/delete")]
         public async Task<string> Delete([QueryField] string username, [QueryField] string password) {
 
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request, Response, server.config.jwtSecret)) {
+            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
                 throw HttpException.Forbidden();
             }
 

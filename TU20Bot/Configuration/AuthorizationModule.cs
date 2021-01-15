@@ -29,7 +29,7 @@ namespace TU20Bot.Configuration {
         private readonly IWebModule module;
         private const string bearerPrefix = "Bearer ";
 
-        private static void error(string text, IHttpResponse response) {
+        public static void error(string text, IHttpResponse response) {
             response.StatusCode = 400;
             var writer = new StreamWriter(response.OutputStream);
             writer.WriteLine(text);
@@ -37,14 +37,17 @@ namespace TU20Bot.Configuration {
         }
 
         protected override async Task OnRequestAsync(IHttpContext context) {
-            if (!validateToken(context.Request, context.Response)) {
+            var authorizationHeader = context.Request.Headers["Authorization"];
+
+            var response = tokenExists(authorizationHeader);
+
+            if (tokenExists(authorizationHeader) != null) {
+                error(response, context.Response);
                 throw HttpException.Unauthorized();
             }
 
-            var authorization = context.Request.Headers["Authorization"];
-
             // Extract the incoming JWT Token from the header
-            var token = authorization.Substring(bearerPrefix.Length);
+            var token = authorizationHeader[bearerPrefix.Length..];
 
             Exception moduleError = null;
 
@@ -52,24 +55,7 @@ namespace TU20Bot.Configuration {
                 var secret = Encoding.UTF8.GetBytes(server.config.jwtSecret);
                 var result = JWT.Decode(token, secret);
 
-                if (string.IsNullOrEmpty(result)) {
-                    error("ERROR: Empty payload.", context.Response);
-                    return;
-                }
-
-                // Deserialize the JWT Token into an AuthorizationPayload object
-                var payload = JsonConvert.DeserializeObject<AuthorizationPayload>(result);
-
-                if (payload == null) {
-                    error("ERROR: Invalid payload.", context.Response);
-                    return;
-                }
-
-                // If the token is expired
-                if (DateTime.Now.CompareTo(payload.validUntil) > 0) {
-                    error("ERROR: Expired token.", context.Response);
-                    return;
-                }
+                var payload = attemptValidateToken(result);
 
                 Console.WriteLine(
                     "[Authorization] Access for {0} to \"{1}\".",
@@ -84,8 +70,8 @@ namespace TU20Bot.Configuration {
 
             } catch (IntegrityException) {
                 error("ERROR: Invalid JWT signature.", context.Response);
-            } catch (Exception) {
-                error("Error: Failure to parse JWT.", context.Response);
+            } catch (Exception _error) {
+                error(_error.Message, context.Response);
             }
 
             if (moduleError != null) {
@@ -99,21 +85,45 @@ namespace TU20Bot.Configuration {
         /// <param name="request"></param>
         /// <param name="response"></param>
         /// <returns></returns>
-        public static bool validateToken(IHttpRequest request, IHttpResponse response) {
-            var authorization = request.Headers["Authorization"];
+        public static string tokenExists(string authorisationHeader) {
 
-            if (string.IsNullOrEmpty(authorization)) {
-                error("ERROR: No authorization token provided.", response);
-                return false;
+            if (string.IsNullOrEmpty(authorisationHeader)) {
+                return "ERROR: No authorization token provided.";
             }
 
             // I completely do not understand this pattern, and I want someone to tell me why. - Taylor
-            if (!authorization.StartsWith(bearerPrefix)) {
-                error("ERROR: Invalid authorization token provided.", response);
-                return false;
+            if (!authorisationHeader.StartsWith(bearerPrefix)) {
+                return "ERROR: Invalid authorization token provided.";
             }
 
-            return true;
+            return null;
+        }
+
+        /// <summary>
+        /// Parses a string as JWT and, if valid, validates it's properties
+        /// </summary>
+        /// <param name="jwtToken"></param>
+        /// <returns>AuthorizationPayload instance from the JWT token</returns>
+        /// <throws>Exception</throws>
+        public static AuthorizationPayload attemptValidateToken(string jwtToken) {
+
+            if (string.IsNullOrEmpty(jwtToken)) {
+                throw new Exception("ERROR: Empty payload.");
+            }
+
+            // Deserialize the JWT Token into an AuthorizationPayload object
+            var payload = JsonConvert.DeserializeObject<AuthorizationPayload>(jwtToken);
+
+            if (payload == null) {
+                throw new Exception("ERROR: Invalid payload.");
+            }
+
+            // If the token is expired
+            if (DateTime.Now.CompareTo(payload.validUntil) > 0) {
+                throw new Exception("ERROR: Expired token.");
+            }
+
+            return payload;
         }
 
         /// <summary>
@@ -124,13 +134,13 @@ namespace TU20Bot.Configuration {
         /// <param name="response"></param>
         /// <param name="jwtSecret"></param>
         /// <returns></returns>
-        public static bool validatePermissions(List<string> permissions, IHttpRequest request, IHttpResponse response, string jwtSecret) {
-            if (!validateToken(request, response)) return false;
+        public static bool validatePermissions(List<string> permissions, string httpHeader, string jwtSecret) {
+            if (tokenExists(httpHeader) != null) return false;
 
-            var authorization = request.Headers["Authorization"];
+            var authorizationHeader = httpHeader;
 
             // Extract the incoming JWT Token from the header
-            var token = authorization.Substring(bearerPrefix.Length);
+            var token = authorizationHeader[bearerPrefix.Length..];
 
             var secret = Encoding.UTF8.GetBytes(jwtSecret);
 
@@ -143,6 +153,27 @@ namespace TU20Bot.Configuration {
             } catch {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Same as `AuthorizationModule#validatePermissions(List<string> permissions, string httpHeader, string jwtSecret)`,
+        ///     except it additionally writes and flushes errors to httpResponse.
+        /// </summary>
+        /// <param name="permissions"></param>
+        /// <param name="header"></param>
+        /// <param name="jwtSecret"></param>
+        /// <param name="httpResponse"></param>
+        /// <returns></returns>
+        public static bool validatePermissions(List<string> permissions, string header, string jwtSecret, IHttpResponse httpResponse) {
+            var response = tokenExists(header);
+
+            if (response != null) {
+                // Write an error to the HTTP stream
+                error(response, httpResponse);
+                return false;
+            }
+
+            return validatePermissions(permissions, header, jwtSecret);
         }
 
         public AuthorizationModule(string baseRoute, Server server, IWebModule module) : base(baseRoute) {
