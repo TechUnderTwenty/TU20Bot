@@ -22,10 +22,10 @@ namespace TU20Bot.Models {
         public string passwordHash { get; set; }
 
         public void setPassword(string password) {
-            var pkpdf2DeriveBytes = new Rfc2898DeriveBytes(password, SALT_SIZE, ITERATIONS);
+            var pbkdf2DeriveBytes = new Rfc2898DeriveBytes(password, SALT_SIZE, ITERATIONS);
 
-            this.passwordHash = Convert.ToBase64String(pkpdf2DeriveBytes.GetBytes(HASH_SIZE));
-            this.salt = pkpdf2DeriveBytes.Salt;
+            this.passwordHash = Convert.ToBase64String(pbkdf2DeriveBytes.GetBytes(HASH_SIZE));
+            this.salt = pbkdf2DeriveBytes.Salt;
         }
 
         public bool checkPassword(string password) {
