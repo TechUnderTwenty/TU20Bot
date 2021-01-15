@@ -37,7 +37,7 @@ namespace TU20Bot.Configuration {
         }
 
         protected override async Task OnRequestAsync(IHttpContext context) {
-            if (!ValidateToken(context.Request, context.Response)) {
+            if (!validateToken(context.Request, context.Response)) {
                 throw HttpException.Unauthorized();
             }
 
@@ -99,7 +99,7 @@ namespace TU20Bot.Configuration {
         /// <param name="request"></param>
         /// <param name="response"></param>
         /// <returns></returns>
-        public static bool ValidateToken(IHttpRequest request, IHttpResponse response) {
+        public static bool validateToken(IHttpRequest request, IHttpResponse response) {
             var authorization = request.Headers["Authorization"];
 
             if (string.IsNullOrEmpty(authorization)) {
@@ -124,8 +124,8 @@ namespace TU20Bot.Configuration {
         /// <param name="response"></param>
         /// <param name="jwtSecret"></param>
         /// <returns></returns>
-        public static bool ValidatePermissions(List<string> permissions, IHttpRequest request, IHttpResponse response, string jwtSecret) {
-            if (!ValidateToken(request, response)) return false;
+        public static bool validatePermissions(List<string> permissions, IHttpRequest request, IHttpResponse response, string jwtSecret) {
+            if (!validateToken(request, response)) return false;
 
             var authorization = request.Headers["Authorization"];
 
