@@ -37,7 +37,8 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Post, "/create")]
         public async Task<string> Create([QueryField] string username, [QueryField] string password) {
 
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
+            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" },
+                Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
                 throw HttpException.Forbidden();
             }
 
@@ -61,7 +62,8 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Delete, "/delete")]
         public async Task<string> Delete([QueryField] string username, [QueryField] string password) {
 
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" }, Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
+            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" },
+                Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
                 throw HttpException.Forbidden();
             }
 

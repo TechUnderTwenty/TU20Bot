@@ -134,7 +134,7 @@ namespace TU20Bot.Configuration {
         /// <param name="response"></param>
         /// <param name="jwtSecret"></param>
         /// <returns></returns>
-        public static bool validatePermissions(List<string> permissions, string httpHeader, string jwtSecret) {
+        public static bool validatePermissions(IEnumerable<string> permissions, string httpHeader, string jwtSecret) {
             if (tokenExists(httpHeader) != null) return false;
 
             var authorizationHeader = httpHeader;
