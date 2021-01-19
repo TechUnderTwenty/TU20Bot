@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.WebApi;
 
@@ -31,10 +32,17 @@ namespace TU20Bot.Configuration {
                 .WithController(createFactory<FactoryController>())
                 .WithController(createFactory<MatchController>());
 
-            this
-                .WithWebApi("/admin", m => m.WithController(createFactory<AuthenticationController>()))
-                .WithLocalSessionManager()
-                .WithModule(new AuthorizationModule("/", this, api));
+            // If the JWT secret is null, open all API routes for anonymous access
+            // WARNING: This should only be used for development
+            if (this.config.jwtSecret == null) {
+                this.WithModule(api)
+                    .WithLocalSessionManager();
+            } else {
+                this.WithWebApi("/admin", m => m.WithController(createFactory<AuthenticationController>()))
+                    .WithLocalSessionManager()
+                    .WithModule(new AuthorizationModule("/", this, api));
+            }
+
         }
     }
 }

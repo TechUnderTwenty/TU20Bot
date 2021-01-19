@@ -27,11 +27,11 @@ namespace TU20Bot.Configuration {
         public string name;
         public int maxChannels;
         public readonly List<ulong> channels = new List<ulong>();
-        
+
         [XmlIgnore]
         public Timer timer;
     }
-    
+
     public class UserDetails {
         public string firstName;
         public string lastName;
@@ -63,12 +63,12 @@ namespace TU20Bot.Configuration {
         private const string databaseVariableName = "tu20_database_name";
 
         private const string defaultDatabaseName = "tu20bot";
-        
+
         public string token;
         public string mongoUrl;
         public string jwtSecret;
         public string databaseName = defaultDatabaseName;
-        
+
         public const string defaultPath = "config.xml";
         public ulong guildId = 230737273350520834; // TU20
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
@@ -92,7 +92,7 @@ namespace TU20Bot.Configuration {
         public static Config load(string path = defaultPath) {
             if (!File.Exists(path))
                 return null;
-            
+
             var serializer = new XmlSerializer(typeof(Config));
             var stream = new FileStream(path, FileMode.Open);
             return (Config)serializer.Deserialize(stream);
@@ -104,10 +104,10 @@ namespace TU20Bot.Configuration {
             var environmentMongo = Environment.GetEnvironmentVariable(mongoVariableName);
             var environmentDatabase = Environment.GetEnvironmentVariable(databaseVariableName);
             var environmentJwtSecret = Environment.GetEnvironmentVariable(jwtSecretVariableName);
-            
-            if (string.IsNullOrEmpty(environmentToken) || string.IsNullOrEmpty(environmentJwtSecret))
+
+            if (string.IsNullOrEmpty(environmentToken))
                 return null;
-            
+
             Console.WriteLine("Configuring from environment variables...");
 
             return new Config {
@@ -117,11 +117,11 @@ namespace TU20Bot.Configuration {
                 databaseName = environmentDatabase?.NullIfEmpty() ?? defaultDatabaseName,
             };
         }
-        
+
         public static Config configure(string[] args) {
             if (args.Length >= 2 && args.First() == "init") {
                 Console.WriteLine("Configuring from command line...");
-                
+
                 return new Config {
                     token = args[1],
                     mongoUrl = args.Length > 2 ? args[2].NullIfEmpty() : null,
@@ -137,37 +137,37 @@ namespace TU20Bot.Configuration {
 
             Console.WriteLine("Configuring from console input...");
 
+            // Request the Discord Bot Token
             Console.Write(" * Discord Bot Token (required): ");
             var token = Console.ReadLine();
             if (string.IsNullOrEmpty(token)) {
                 Console.WriteLine("Discord Bot Token is required. Exiting...");
                 Environment.Exit(1);
             }
-            
-            Console.Write(" * JWT Secret Key (required): ");
-            var secret = Console.ReadLine();
-            if (string.IsNullOrEmpty(secret)) {
-                Console.WriteLine("JWT Secret Key is required. Exiting...");
-                Environment.Exit(1);
-            }
 
+            // Request the JWT secret
+            Console.Write(" * JWT Secret Key: ");
+            var secret = Console.ReadLine()?.NullIfEmpty();
+
+            // Request the MongoDB URL
             Console.Write(" * MongoDB URL (optional): ");
             var databaseUrl = Console.ReadLine()?.NullIfEmpty();
 
             string databaseName = null;
-            
+
+            // If the database URL was provided, request the database name
             if (databaseUrl != null) {
                 Console.Write(" * MongoDB Database Name (optional): ");
                 databaseName = Console.ReadLine()?.NullIfEmpty();
             }
-            
+
             var result = new Config {
                 token = token,
                 mongoUrl = databaseUrl,
                 jwtSecret = secret,
                 databaseName = databaseName ?? defaultDatabaseName,
             };
-            
+
             Console.Write(" * Commit this config (y/N)? ");
             var commit = Console.ReadLine()?.ToLower();
 
