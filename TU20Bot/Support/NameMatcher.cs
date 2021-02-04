@@ -53,6 +53,7 @@ namespace TU20Bot.Support {
             };
 
             var spaceIndex = fullName.LastIndexOf(' ');
+            spaceIndex = spaceIndex == -1 ? fullName.Length - 1 : spaceIndex;
 
             foreach (var detail in details) {
                 // If a user doesn't have a first or last name in the server
