@@ -29,54 +29,47 @@ namespace TU20Bot.Configuration {
         private const string bearerPrefix = "Bearer ";
 
         protected override async Task OnRequestAsync(IHttpContext context) {
-            // try {
-                if (server.config.jwtSecret == null) {
-                    await module.HandleRequestAsync(context);
+            if (server.config.jwtSecret == null) {
+                await module.HandleRequestAsync(context);
 
-                    return;
-                }
+                return;
+            }
 
-                var authorizationHeader = context.Request.Headers["Authorization"];
+            var authorizationHeader = context.Request.Headers["Authorization"];
 
-                if (!tokenIsValid(authorizationHeader))
-                    throw HttpException.Unauthorized("Token is invalid.");
+            if (!tokenIsValid(authorizationHeader))
+                throw HttpException.Unauthorized("Token is invalid.");
 
-                // Extract the incoming JWT Token from the header
-                var token = authorizationHeader[bearerPrefix.Length..];
+            // Extract the incoming JWT Token from the header
+            var token = authorizationHeader[bearerPrefix.Length..];
 
-                Exception moduleError = null;
+            Exception moduleError = null;
 
+            try {
+                var secret = Encoding.UTF8.GetBytes(server.config.jwtSecret);
+                var result = JWT.Decode(token, secret);
+
+                var payload = attemptValidateToken(result);
+
+                Console.WriteLine(
+                    "[Authorization] Access for {0} to \"{1}\".",
+                    payload.fullName, context.Request.Url);
+
+                // Direct the module to handle the request
                 try {
-                    var secret = Encoding.UTF8.GetBytes(server.config.jwtSecret);
-                    var result = JWT.Decode(token, secret);
-
-                    var payload = attemptValidateToken(result);
-
-                    Console.WriteLine(
-                        "[Authorization] Access for {0} to \"{1}\".",
-                        payload.fullName, context.Request.Url);
-
-                    // Direct the module to handle the request
-                    try {
-                        await module.HandleRequestAsync(context);
-                    } catch (Exception e) {
-                        moduleError = e;
-                    }
-                } catch (IntegrityException) {
-                    throw HttpException.Unauthorized("Invalid JWT signature.");
+                    await module.HandleRequestAsync(context);
                 } catch (Exception e) {
-                    throw HttpException.InternalServerError(e.Message);
+                    moduleError = e;
                 }
+            } catch (IntegrityException) {
+                throw HttpException.Unauthorized("Invalid JWT signature.");
+            } catch (Exception e) {
+                throw HttpException.InternalServerError(e.Message);
+            }
 
-                if (moduleError != null) {
-                    throw moduleError;
-                }
-            // }  catch (HttpException e) {
-            //     if (e.StatusCode == 404)
-            //         throw RequestHandler.PassThrough();
-            //
-            //     throw;
-            // }
+            if (moduleError != null) {
+                throw moduleError;
+            }
         }
 
         /// <summary>
