@@ -1,4 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.WebApi;
@@ -13,37 +19,62 @@ namespace TU20Bot.Configuration {
         public readonly Client client;
         public readonly Config config;
 
-        private Func<T> createFactory<T>() where T : ServerController, new() {
-            return () => new T { server = this };
-        }
-
+        private Func<T> factory<T>() where T : ServerController, new()
+            => () => new T { server = this };
+        
         public Server(Client client) : base(e => e
             .WithUrlPrefix($"{allSources}:{port}")
             .WithMode(HttpListenerMode.EmbedIO)) {
             this.client = client;
             config = client.config;
 
-            var api = new WebApiModule("/")
-                .WithController(createFactory<PingController>())
-                .WithController(createFactory<WelcomeController>())
-                .WithController(createFactory<DiscordController>())
-                .WithController(createFactory<LogController>())
-                .WithController(createFactory<CommitController>())
-                .WithController(createFactory<FactoryController>())
-                .WithController(createFactory<MatchController>());
+            var serverType = GetType();
+            
+            var assembly = serverType.Assembly;
+            if (assembly == null)
+                throw new Exception("Assembly missing, server cannot start.");
 
-            // If the JWT secret is null, open all API routes for anonymous access
-            // WARNING: This should only be used for development
-            if (this.config.jwtSecret == null) {
-                this.WithModule(api)
-                    .WithLocalSessionManager();
-            } else {
-                this.WithWebApi("/admin", m => m
-                        .WithController(createFactory<AuthenticationController>()))
-                    .WithLocalSessionManager()
-                    .WithModule(new AuthorizationModule("/", this, api));
+            var types = assembly.GetTypes();
+            
+            var factoryMethod = typeof(Server).GetMethod(nameof(factory),
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (factoryMethod == null)
+                throw new Exception("Missing factory method, server cannot start.");
+            
+            var authApi = new WebApiModule("/");
+            var openApi = new WebApiModule("/");
+
+            foreach (var type in types) {
+                if (type == typeof(ServerController))
+                    continue;
+                
+                if (!typeof(ServerController).IsAssignableFrom(type))
+                    continue;
+
+                var attributes = type.GetCustomAttributes(typeof(Controller), true);
+
+                if (!attributes.Any())
+                    continue;
+
+                var attribute = (Controller) attributes.First();
+                var api = attribute.authorization ? authApi : openApi;
+                
+                var genericFactory = (Func<WebApiController>) factoryMethod
+                    .MakeGenericMethod(type)
+                    .Invoke(this, new object[] { });
+
+                if (genericFactory == null)
+                    throw new Exception($"Cannot create factory for {type.Name}.");
+
+                api.WithController(type, genericFactory);
             }
 
+            var authModule = new AuthorizationModule("/", this, authApi);
+            
+            this
+                .WithModule(authModule)
+                .WithModule(openApi)
+                .WithLocalSessionManager();
         }
     }
 }

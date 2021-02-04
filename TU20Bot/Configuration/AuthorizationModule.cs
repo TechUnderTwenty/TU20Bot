@@ -1,5 +1,5 @@
 using System;
-using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using EmbedIO;
 
 using Jose;
+
 using Newtonsoft.Json;
-using System.Linq;
-using System.Net;
 
 namespace TU20Bot.Configuration {
     // I kinda hate Swan.Formatters, I'm going to use Newtonsoft.
@@ -30,46 +29,53 @@ namespace TU20Bot.Configuration {
         private const string bearerPrefix = "Bearer ";
 
         protected override async Task OnRequestAsync(IHttpContext context) {
-            if (!server.config.authentication) {
-                await module.HandleRequestAsync(context);
-                
-                return;
-            }
-
-            var authorizationHeader = context.Request.Headers["Authorization"];
-
-            if (!tokenIsValid(authorizationHeader))
-                throw HttpException.Unauthorized("Token is invalid.");
-
-            // Extract the incoming JWT Token from the header
-            var token = authorizationHeader[bearerPrefix.Length..];
-
-            Exception moduleError = null;
-
             try {
-                var secret = Encoding.UTF8.GetBytes(server.config.jwtSecret);
-                var result = JWT.Decode(token, secret);
-
-                var payload = attemptValidateToken(result);
-
-                Console.WriteLine(
-                    "[Authorization] Access for {0} to \"{1}\".",
-                    payload.fullName, context.Request.Url);
-
-                // Direct the module to handle the request
-                try {
+                if (server.config.jwtSecret == null) {
                     await module.HandleRequestAsync(context);
-                } catch (Exception e) {
-                    moduleError = e;
-                }
-            } catch (IntegrityException) {
-                throw HttpException.Forbidden("Invalid JWT signature.");
-            } catch (Exception e) {
-                throw HttpException.InternalServerError(e.Message);
-            }
 
-            if (moduleError != null) {
-                throw moduleError;
+                    return;
+                }
+
+                var authorizationHeader = context.Request.Headers["Authorization"];
+
+                if (!tokenIsValid(authorizationHeader))
+                    throw HttpException.Unauthorized("Token is invalid.");
+
+                // Extract the incoming JWT Token from the header
+                var token = authorizationHeader[bearerPrefix.Length..];
+
+                Exception moduleError = null;
+
+                try {
+                    var secret = Encoding.UTF8.GetBytes(server.config.jwtSecret);
+                    var result = JWT.Decode(token, secret);
+
+                    var payload = attemptValidateToken(result);
+
+                    Console.WriteLine(
+                        "[Authorization] Access for {0} to \"{1}\".",
+                        payload.fullName, context.Request.Url);
+
+                    // Direct the module to handle the request
+                    try {
+                        await module.HandleRequestAsync(context);
+                    } catch (Exception e) {
+                        moduleError = e;
+                    }
+                } catch (IntegrityException) {
+                    throw HttpException.Forbidden("Invalid JWT signature.");
+                } catch (Exception e) {
+                    throw HttpException.InternalServerError(e.Message);
+                }
+
+                if (moduleError != null) {
+                    throw moduleError;
+                }
+            }  catch (HttpException e) {
+                if (e.StatusCode == 404)
+                    throw RequestHandler.PassThrough();
+
+                throw;
             }
         }
 
