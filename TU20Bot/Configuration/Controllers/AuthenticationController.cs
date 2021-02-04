@@ -1,20 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
 using EmbedIO;
-using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using EmbedIO.Routing;
+
 using Jose;
+
 using MongoDB.Driver;
+
 using TU20Bot.Models;
 
 namespace TU20Bot.Configuration.Controllers {
     public class AuthenticationController : ServerController {
-
         [Route(HttpVerbs.Post, "/login")]
-        public string Login([QueryField] string username, [QueryField] string password) {
+        public string login([QueryField] string username, [QueryField] string password) {
 
             var user = server.client.database
                 .GetCollection<AccountModel>(AccountModel.collectionName)
@@ -34,49 +36,54 @@ namespace TU20Bot.Configuration.Controllers {
             }, Encoding.UTF8.GetBytes(server.config.jwtSecret), JwsAlgorithm.HS256);
         }
 
+        private readonly string[] administrator = { "Admin" };
+        
         [Route(HttpVerbs.Post, "/create")]
-        public async Task<string> Create([QueryField] string username, [QueryField] string password) {
-
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" },
-                Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
+        public async Task create([QueryField] string username, [QueryField] string password) {
+            var validated = AuthorizationModule.validatePermissions(
+                administrator, Request.Headers["Authorization"], server.config.jwtSecret);
+            
+            if (!validated)
                 throw HttpException.Forbidden();
-            }
 
-            var uersCollection = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
-            var user = uersCollection.Find(_user => _user.username.Equals(username.ToLower()));
+            var collection = server.client.database
+                .GetCollection<AccountModel>(AccountModel.collectionName);
+            var user = collection.Find(x => x.username.Equals(username.ToLower()));
 
             // If a user already exists, it is not possible to create a new user
-            if (user.Any()) throw HttpException.NotAcceptable();
+            if (await user.AnyAsync())
+                throw HttpException.NotAcceptable();
 
-            var _user = new AccountModel {
-                username = username.ToLower(),
+            var model = new AccountModel {
+                username = username.ToLower(), // :to_lower_thinking: - Taylor
                 permissions = new List<string> { "Admin" }
             };
-            _user.setPassword(password);
+            model.setPassword(password);
 
-            await uersCollection.InsertOneAsync(_user);
-
-            return username.ToLower();
+            await collection.InsertOneAsync(model);
         }
 
         [Route(HttpVerbs.Delete, "/delete")]
-        public async Task<string> Delete([QueryField] string username, [QueryField] string password) {
-
-            if (!AuthorizationModule.validatePermissions(new List<string> { "Admin" },
-                Request.Headers["Authorization"], server.config.jwtSecret, Response)) {
+        public async Task delete([QueryField] string username) {
+            var validated = AuthorizationModule.validatePermissions(
+                administrator, Request.Headers["Authorization"], server.config.jwtSecret);
+            
+            if (!validated)
                 throw HttpException.Forbidden();
-            }
 
-            var usersCollection = server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
-            var user = usersCollection.Find(_user => _user.username.Equals(username.ToLower()));
+            var collection = server.client.database
+                .GetCollection<AccountModel>(AccountModel.collectionName);
+            var user = collection.Find(x => x.username.Equals(username.ToLower()));
 
-            if (!user.Any()) throw HttpException.NotFound();
+            if (!await user.AnyAsync())
+                throw HttpException.NotFound();
 
-            var _user = user.First();
-            var result = await usersCollection.DeleteOneAsync(Builders<AccountModel>.Filter.Eq("id", _user.id));
+            var model = user.First();
+            var result = await collection.DeleteOneAsync(
+                Builders<AccountModel>.Filter.Eq("id", model.id));
 
-            if (result.DeletedCount == 1) return "Deleted";
-            throw HttpException.InternalServerError();
+            if (result.DeletedCount != 1)
+                throw HttpException.InternalServerError();
         }
     }
 }
