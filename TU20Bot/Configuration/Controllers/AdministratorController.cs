@@ -10,26 +10,37 @@ using MongoDB.Driver;
 using TU20Bot.Models;
 
 namespace TU20Bot.Configuration.Controllers {
+    using UserCollection = IMongoCollection<AccountModel>;
+    
     public class AdministratorController : ServerController {
         private readonly string[] administrator = { "Admin" };
         
+        private bool validated =>
+            AuthorizationModule.validatePermissions(
+                administrator, Request.Headers["Authorization"], server.config.jwtSecret
+            );
+
+        private UserCollection collection =>
+            server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
+
+        // async/await + pure does not play well together :|
+        // this looks really ugly, but I don't want to make it non-pure
+        private async Task<AccountModel> getUser(string username) =>
+            await (
+                await collection.FindAsync(Builders<AccountModel>.Filter
+                    .Eq(x => x.username, username))
+            ).FirstOrDefaultAsync();
+
         [Route(HttpVerbs.Post, "/create")]
         public async Task create([QueryField] string username, [QueryField] string password) {
             if (username == null || password == null)
                 throw HttpException.BadRequest();
             
-            var validated = AuthorizationModule.validatePermissions(
-                administrator, Request.Headers["Authorization"], server.config.jwtSecret);
-            
             if (!validated)
                 throw HttpException.Forbidden();
 
-            var collection = server.client.database
-                .GetCollection<AccountModel>(AccountModel.collectionName);
-            var user = collection.Find(x => x.username.Equals(username.ToLower()));
-
             // If a user already exists, it is not possible to create a new user
-            if (await user.AnyAsync())
+            if (await getUser(username) != null)
                 throw HttpException.NotAcceptable();
 
             var model = new AccountModel {
@@ -45,23 +56,17 @@ namespace TU20Bot.Configuration.Controllers {
         public async Task delete([QueryField] string username) {
             if (username == null)
                 throw HttpException.BadRequest();
-            
-            var validated = AuthorizationModule.validatePermissions(
-                administrator, Request.Headers["Authorization"], server.config.jwtSecret);
-            
+
             if (!validated)
                 throw HttpException.Forbidden();
 
-            var collection = server.client.database
-                .GetCollection<AccountModel>(AccountModel.collectionName);
-            var user = collection.Find(x => x.username.Equals(username.ToLower()));
+            var user = await getUser(username);
 
-            if (!await user.AnyAsync())
+            if (user == null)
                 throw HttpException.NotFound();
 
-            var model = user.First();
             var result = await collection.DeleteOneAsync(
-                Builders<AccountModel>.Filter.Eq("id", model.id));
+                Builders<AccountModel>.Filter.Eq(x => x.id, user.id));
 
             if (result.DeletedCount != 1)
                 throw HttpException.InternalServerError();
