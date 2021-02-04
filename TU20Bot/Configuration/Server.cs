@@ -50,12 +50,12 @@ namespace TU20Bot.Configuration {
                 if (!typeof(ServerController).IsAssignableFrom(type))
                     continue;
 
-                var attributes = type.GetCustomAttributes(typeof(Controller), true);
+                var attributes = type.GetCustomAttributes(typeof(ControllerInfo), true);
                 if (!attributes.Any())
                     continue;
 
                 // authorization fields will be used to decide if endpoints will be protected by AuthorizationModule.
-                var attribute = (Controller) attributes.First();
+                var attribute = (ControllerInfo) attributes.First();
                 var api = attribute.authorization ? authApi : openApi;
 
                 // Make the factory.

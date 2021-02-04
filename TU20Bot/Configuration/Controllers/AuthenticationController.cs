@@ -14,7 +14,7 @@ using MongoDB.Driver;
 using TU20Bot.Models;
 
 namespace TU20Bot.Configuration.Controllers {
-    [Controller(false)]
+    [ControllerInfo(false)]
     public class AuthenticationController : ServerController {
         [Route(HttpVerbs.Post, "/login")]
         public string login([QueryField] string username, [QueryField] string password) {

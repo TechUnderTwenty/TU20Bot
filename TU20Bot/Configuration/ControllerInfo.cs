@@ -1,12 +1,11 @@
 using System;
 
 namespace TU20Bot.Configuration {
-    // Name conflicts incoming :D
     [AttributeUsage(AttributeTargets.Class)]
-    public class Controller : Attribute {
+    public class ControllerInfo : Attribute {
         public readonly bool authorization;
         
-        public Controller(bool authorization = true) {
+        public ControllerInfo(bool authorization = true) {
             this.authorization = authorization;
         }
     }

@@ -1,7 +1,7 @@
 using EmbedIO.WebApi;
 
 namespace TU20Bot.Configuration {
-    [Controller]
+    [ControllerInfo]
     public class ServerController : WebApiController {
         public Server server;
     }
