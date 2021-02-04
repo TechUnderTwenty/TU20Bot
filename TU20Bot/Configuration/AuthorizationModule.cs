@@ -29,7 +29,7 @@ namespace TU20Bot.Configuration {
         private const string bearerPrefix = "Bearer ";
 
         protected override async Task OnRequestAsync(IHttpContext context) {
-            try {
+            // try {
                 if (server.config.jwtSecret == null) {
                     await module.HandleRequestAsync(context);
 
@@ -63,7 +63,7 @@ namespace TU20Bot.Configuration {
                         moduleError = e;
                     }
                 } catch (IntegrityException) {
-                    throw HttpException.Forbidden("Invalid JWT signature.");
+                    throw HttpException.Unauthorized("Invalid JWT signature.");
                 } catch (Exception e) {
                     throw HttpException.InternalServerError(e.Message);
                 }
@@ -71,12 +71,12 @@ namespace TU20Bot.Configuration {
                 if (moduleError != null) {
                     throw moduleError;
                 }
-            }  catch (HttpException e) {
-                if (e.StatusCode == 404)
-                    throw RequestHandler.PassThrough();
-
-                throw;
-            }
+            // }  catch (HttpException e) {
+            //     if (e.StatusCode == 404)
+            //         throw RequestHandler.PassThrough();
+            //
+            //     throw;
+            // }
         }
 
         /// <summary>

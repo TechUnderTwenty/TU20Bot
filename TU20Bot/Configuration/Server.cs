@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.WebApi;
@@ -58,7 +59,7 @@ namespace TU20Bot.Configuration {
 
                 var attribute = (Controller) attributes.First();
                 var api = attribute.authorization ? authApi : openApi;
-                
+
                 var genericFactory = (Func<WebApiController>) factoryMethod
                     .MakeGenericMethod(type)
                     .Invoke(this, new object[] { });
@@ -69,11 +70,25 @@ namespace TU20Bot.Configuration {
                 api.WithController(type, genericFactory);
             }
 
-            var authModule = new AuthorizationModule("/", this, authApi);
+            // This breaks exception messages for the login endpoint but I can't care less.
+            openApi.OnHttpException = (context, exception) => {
+                if (exception.StatusCode == 404)
+                    return Task.CompletedTask;
+                
+                context.SetHandled();
+                exception.PrepareResponse(context);
+
+                if (exception.Message != null) {
+                    context.Response.OutputStream.Write(
+                        Encoding.UTF8.GetBytes(exception.Message));
+                }
+
+                return Task.CompletedTask;
+            };
             
             this
-                .WithModule(authModule)
-                .WithModule(openApi)
+                .WithModule(new ModuleGroup("/", false).WithModule(openApi))
+                .WithModule(new AuthorizationModule("/", this, authApi))
                 .WithLocalSessionManager();
         }
     }
