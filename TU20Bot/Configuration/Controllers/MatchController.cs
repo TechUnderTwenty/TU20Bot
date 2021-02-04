@@ -102,11 +102,8 @@ namespace TU20Bot.Configuration.Controllers {
         public async Task<int> createMatch() {
             var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
 
-            if (!await evaluateMatch(match)) {
-                HttpContext.Response.StatusCode = 500;
-                return -1;
-            }
-            
+            await evaluateMatch(match).ConfigureAwait(false);
+
             // Add it to the config for future matches.
             var index = server.config.userRoleMatches.Count;
             server.config.userRoleMatches.Add(match);
@@ -144,6 +141,9 @@ namespace TU20Bot.Configuration.Controllers {
         // I apologize for the next person who has to edit this method.
         [Route(HttpVerbs.Put, "/match/{index}/data")]
         public async Task<object> editData(int index) {
+            if (server.config.userRoleMatches.Count <= index)
+                throw HttpException.BadRequest($"Match {index} does not exist.");
+            
             var workbook = new XSSFWorkbook(HttpContext.Request.InputStream);
 
             // Spreadsheet parsing can go wrong quickly, I'm trying to make good error messages to catch that.
@@ -301,30 +301,25 @@ namespace TU20Bot.Configuration.Controllers {
             var match = server.config.userRoleMatches[index];
             match.userDetailInformation = details;
 
-            // :cry: I made it!!!
-            if (await evaluateMatch(match)) {
-                return new {
-                    details = match.userDetailInformation.Select(x => new {
-                        x.email,
-                        x.firstName,
-                        x.lastName
-                    })
-                };
-            }
+            // Evaluate match takes a long time with rate limits, run later and hope it works.
+            // Better than praying that the super short axios timeout is enough time.
+            await evaluateMatch(match).ConfigureAwait(false);
             
-            HttpContext.Response.StatusCode = 500;
-            return null;
+            return new {
+                details = match.userDetailInformation.Select(x => new {
+                    x.email,
+                    x.firstName,
+                    x.lastName
+                })
+            };
         }
 
         [Route(HttpVerbs.Put, "/match/{index}")]
         public async Task editMatch(int index) {
             var match = (await HttpContext.GetRequestDataAsync<MatchJsonPayload>()).toUserMatch();
 
-            if (!await evaluateMatch(match)) {
-                HttpContext.Response.StatusCode = 500;
-                return;
-            }
-            
+            await evaluateMatch(match).ConfigureAwait(false);
+
             server.config.userRoleMatches[index] = match;
         }
 
@@ -332,6 +327,18 @@ namespace TU20Bot.Configuration.Controllers {
         [Route(HttpVerbs.Delete, "/match/{index}")]
         public void deleteMatch(int index) {
             server.config.userRoleMatches.RemoveAt(index);
+        }
+        
+        [Route(HttpVerbs.Post, "/match/run")]
+        public async Task<bool> runMatch() {
+            // No AnyAsync :thinking:
+            foreach (var match in server.config.userRoleMatches) {
+                if (!await evaluateMatch(match)) {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
