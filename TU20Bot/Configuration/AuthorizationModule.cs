@@ -30,6 +30,11 @@ namespace TU20Bot.Configuration {
         private const string bearerPrefix = "Bearer ";
 
         protected override async Task OnRequestAsync(IHttpContext context) {
+            if (!server.config.authentication) {
+                await module.HandleRequestAsync(context);
+                
+                return;
+            }
 
             var authorizationHeader = context.Request.Headers["Authorization"];
 

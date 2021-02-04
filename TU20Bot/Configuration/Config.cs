@@ -69,6 +69,8 @@ namespace TU20Bot.Configuration {
         public string jwtSecret;
         public string databaseName = defaultDatabaseName;
 
+        public bool authentication = true;
+
         public const string defaultPath = "config.xml";
         public ulong guildId = 230737273350520834; // TU20
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
