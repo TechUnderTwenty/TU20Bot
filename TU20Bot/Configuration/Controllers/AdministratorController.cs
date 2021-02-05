@@ -10,8 +10,8 @@ using MongoDB.Driver;
 using TU20Bot.Models;
 
 namespace TU20Bot.Configuration.Controllers {
-    using UserCollection = IMongoCollection<AccountModel>;
-    
+    using AccountCollection = IMongoCollection<AccountModel>;
+
     public class AdministratorController : ServerController {
         private readonly string[] administratorPermissions = { "Admin" };
         
@@ -20,7 +20,7 @@ namespace TU20Bot.Configuration.Controllers {
                 administratorPermissions, Request.Headers["Authorization"], server.config.jwtSecret
             );
 
-        private UserCollection accountCollection =>
+        private AccountCollection accountCollection =>
             server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
 
         // async/await + pure does not play well together :|
