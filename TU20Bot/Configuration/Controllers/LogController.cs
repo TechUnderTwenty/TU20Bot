@@ -8,6 +8,7 @@ using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
 namespace TU20Bot.Configuration.Controllers {
+    [ControllerInfo(true)]
     public class LogController : ServerController {
         [Route(HttpVerbs.Get, "/logs/excel.xlsx")]
         public void getExcelLogs() {

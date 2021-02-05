@@ -16,6 +16,7 @@ using TU20Bot.Support;
 using TU20Bot.Configuration.Payloads;
 
 namespace TU20Bot.Configuration.Controllers {
+    [ControllerInfo(true)]
     public class MatchController : ServerController {
         private struct CellReference {
             public int columnNumber;

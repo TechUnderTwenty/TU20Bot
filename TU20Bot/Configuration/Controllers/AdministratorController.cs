@@ -12,6 +12,7 @@ using TU20Bot.Models;
 namespace TU20Bot.Configuration.Controllers {
     using AccountCollection = IMongoCollection<AccountModel>;
 
+    [ControllerInfo(true)]
     public class AdministratorController : ServerController {
         private readonly string[] administratorPermissions = { "Admin" };
         
