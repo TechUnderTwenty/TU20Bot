@@ -329,6 +329,7 @@ namespace TU20Bot.Configuration.Controllers {
             server.config.userRoleMatches.RemoveAt(index);
         }
         
+        // **Blocking** endpoint for manually reassigning roles to users. 
         [Route(HttpVerbs.Post, "/match/run")]
         public async Task<bool> runMatch() {
             // No AnyAsync :thinking:
