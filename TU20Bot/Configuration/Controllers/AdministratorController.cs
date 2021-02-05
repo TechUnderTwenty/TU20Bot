@@ -13,21 +13,21 @@ namespace TU20Bot.Configuration.Controllers {
     using UserCollection = IMongoCollection<AccountModel>;
     
     public class AdministratorController : ServerController {
-        private readonly string[] administrator = { "Admin" };
+        private readonly string[] administratorPermissions = { "Admin" };
         
         private bool validated =>
             AuthorizationModule.validatePermissions(
-                administrator, Request.Headers["Authorization"], server.config.jwtSecret
+                administratorPermissions, Request.Headers["Authorization"], server.config.jwtSecret
             );
 
-        private UserCollection collection =>
+        private UserCollection accountCollection =>
             server.client.database.GetCollection<AccountModel>(AccountModel.collectionName);
 
         // async/await + pure does not play well together :|
         // this looks really ugly, but I don't want to make it non-pure
         private async Task<AccountModel> getUser(string username) =>
             await (
-                await collection.FindAsync(Builders<AccountModel>.Filter
+                await accountCollection.FindAsync(Builders<AccountModel>.Filter
                     .Eq(x => x.username, username))
             ).FirstOrDefaultAsync();
 
@@ -49,7 +49,7 @@ namespace TU20Bot.Configuration.Controllers {
             };
             model.setPassword(password);
 
-            await collection.InsertOneAsync(model);
+            await accountCollection.InsertOneAsync(model);
         }
 
         [Route(HttpVerbs.Delete, "/delete")]
@@ -65,7 +65,7 @@ namespace TU20Bot.Configuration.Controllers {
             if (user == null)
                 throw HttpException.NotFound();
 
-            var result = await collection.DeleteOneAsync(
+            var result = await accountCollection.DeleteOneAsync(
                 Builders<AccountModel>.Filter.Eq(x => x.id, user.id));
 
             if (result.DeletedCount != 1)
