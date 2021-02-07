@@ -20,12 +20,11 @@ namespace TU20Bot {
     public class Handler {
         // Config
         private const char prefix = '-';
-        private const bool showStackTrace = true;
-
-        private readonly Client client;
         
-        private readonly CommandService commands;
-        private readonly ServiceProvider services;
+        private Client client;
+        
+        private CommandService commands;
+        private ServiceProvider services;
 
         private readonly Random random = new Random();
 
@@ -96,20 +95,29 @@ namespace TU20Bot {
                 var context = new SocketCommandContext(client, userMessage);
                 var result = await commands.ExecuteAsync(context, prefixStart, services);
                 
-                // Handle any errors.
-                if (!result.IsSuccess && result.Error != CommandError.UnknownCommand) {
-                    if (showStackTrace && result.Error == CommandError.Exception 
+                // Handle any errors. Returns are there to skip event builder entries.
+                if (!result.IsSuccess) {
+                    if (result.Error != CommandError.UnknownCommand) {
+                        if (result.Error == CommandError.Exception
                             && result is ExecuteResult execution) {
-                        await sendErrorMessage(
-                            $"```\n{execution.Exception.Message}\n\n{execution.Exception.StackTrace}\n```",
-                            userMessage);
-                    } else {
-                        await sendErrorMessage(
-                            $"Halt We've hit an error.\n```\n{result.ErrorReason}\n```",
-                            userMessage);
+                            await sendErrorMessage(
+                                $"```\n{execution.Exception.Message}\n\n{execution.Exception.StackTrace}\n```",
+                                userMessage);
+                        } else {
+                            await sendErrorMessage(
+                                $"Halt We've hit an error.\n```\n{result.ErrorReason}\n```",
+                                userMessage);
+                        }
+
+                        return;
                     }
+                } else {
+                    return;
                 }
             }
+
+            if (client.config.eventBuilders.TryGetValue(message.Author.Id, out var builder))
+                await builder.sendMessage(message);
         }
 
         private Task userLeft(SocketGuildUser user) {
@@ -165,7 +173,7 @@ namespace TU20Bot {
 
             // If the email has been found, find all role matches to which the email belongs to
             var emailMatches = (email == null) ? new List<ulong>() : client.config.userRoleMatches
-                .Where(x => x.userDetailInformation.Any(user => user.email == email)) // check for email
+                .Where(x => x.userDetailInformation.Any(u => u.email == email)) // check for email
                 .Select(x => x.role); // grab roles
 
             var guild = user.Guild;
@@ -263,15 +271,43 @@ namespace TU20Bot {
         private async Task reactionAdded(Cacheable<IUserMessage, ulong> message,
             ISocketMessageChannel channel, SocketReaction reaction) {
             await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Add);
+
+            if (client.config.eventBuilders.TryGetValue(reaction.UserId, out var builder))
+                await builder.addReaction(message.Id, reaction);
+
+            if (reaction.UserId != client.CurrentUser.Id
+                && channel.Id == client.config.approvalChannelId
+                && channel is IGuildChannel guildChannel) {
+                var user = await guildChannel.Guild.GetUserAsync(reaction.UserId);
+                var permissions = user.GetPermissions(guildChannel);
+                
+                // Just some requirement for approving messages.
+                if (permissions.ManageChannel) {
+                    switch (reaction.Emote.Name) {
+                        case "✅":
+                            await EventBuilder.approve(client, user, message.Id);
+                            break;
+
+                        case "❌":
+                            await EventBuilder.reject(client, user, message.Id);
+                            break;
+                    }
+                }
+            }
         }
         
         private async Task reactionRemove(Cacheable<IUserMessage, ulong> message,
             ISocketMessageChannel channel, SocketReaction reaction) {
             await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Remove);
+
+            if (client.config.eventBuilders.TryGetValue(reaction.UserId, out var builder))
+                await builder.removeReaction(message.Id, reaction);
         }
 
         // Initializes the Message Handler, subscribe to events, etc.
-        public async Task init() {
+        public async Task init(Client discordClient) {
+            client = discordClient;
+            
             client.Log += log;
             client.UserLeft += userLeft;
             client.UserJoined += userJoined;
@@ -279,18 +315,14 @@ namespace TU20Bot {
             client.UserVoiceStateUpdated += voiceUpdated;
             client.ReactionAdded += reactionAdded;
             client.ReactionRemoved += reactionRemove;
-
-            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
-        }
-
-        public Handler(Client client) {
-            this.client = client;
             
             commands = new CommandService();
             services = new ServiceCollection()
                 .AddSingleton(client)
                 .AddSingleton(commands)
                 .BuildServiceProvider();
+
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }
     }
 }
