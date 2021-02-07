@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +15,7 @@ using MongoDB.Driver;
 using TU20Bot.Models;
 using TU20Bot.Support;
 using TU20Bot.Configuration;
+using Tag = TU20Bot.Models.Tag;
 
 namespace TU20Bot {
     public class Handler {
@@ -116,8 +117,68 @@ namespace TU20Bot {
                 }
             }
 
-            if (client.config.eventBuilders.TryGetValue(message.Author.Id, out var builder))
-                await builder.sendMessage(message);
+            // If execution reaches here, the text should not have matched any command.
+            if (!userMessage.Author.IsBot && message.Channel.Id == client.config.eventsChannelId) {
+                // Send a prompt for them to tag their event.
+                // Maybe should be in DMs? Would be kinda intrusive.
+                var prompt = await message.Channel.SendMessageAsync("", false, new EmbedBuilder()
+                    .WithColor(Color.Green)
+                    .WithTitle("Add Tags")
+                    .WithDescription(
+                        "To finish submitting your event, " +
+                        "react to this message with one of the following tags. " +
+                        "React with ✅ when you're done.\n\n" +
+                        string.Join("\n\n", Tag.allTags.Select(x => $"{x.emoji}   {x.commonName}")))
+                    .Build());
+                
+                var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
+
+                // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
+                static string link(IMessage m) =>
+                    m.Channel is IGuildChannel c
+                        ? $"https://discord.com/channels/{c.Guild.Id}/{c.Id}/{m.Id}"
+                        : $"https://discord.com/channels/@me/{m.Channel}/{m.Id}";
+
+                // Add the event to the database with relevant details.
+                await eventCollection.InsertOneAsync(new EventModel {
+                    authorId = message.Author.Id,
+                    
+                    messageId = message.Id,
+                    messageLink = link(message),
+                    messageContent = message.Content,
+                    
+                    promptId = prompt.Id
+                });
+                
+                // We also want to create an index for the collection so we can do text searching later.
+                await eventCollection.Indexes.CreateOneAsync(new CreateIndexModel<EventModel>(
+                    Builders<EventModel>.IndexKeys.Text(x => x.messageContent)
+                ));
+
+                // Add the example reactions, including tag emojis and ✅.
+                await prompt.AddReactionsAsync(Tag.allTags
+                    .Select(x => new Emoji(x.emoji) as IEmote)
+                    .Append(new Emoji("✅"))
+                    .ToArray());
+                
+                // When a user reacts, work is picked up in Handler's reactionAdded and reactionRemoved.
+            }
+        }
+
+        private async Task messageDeleted(Cacheable<IMessage, ulong> message, ISocketMessageChannel channel) {
+            // Check if the deleted message is relevant to the events submission channel.
+            if (channel.Id == client.config.eventsChannelId) {
+                var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
+                
+                // Let's delete any record of the event if the original message was deleted.
+                var model = await eventCollection.FindOneAndDeleteAsync(
+                    Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id));
+
+                // Delete the prompt too, if it exists.
+                if (model.promptId.HasValue) {
+                    await channel.DeleteMessageAsync(model.promptId.Value);
+                }
+            }
         }
 
         private Task userLeft(SocketGuildUser user) {
@@ -172,7 +233,7 @@ namespace TU20Bot {
                 .Select(x => x.role); // grab roles
 
             // If the email has been found, find all role matches to which the email belongs to
-            var emailMatches = (email == null) ? new List<ulong>() : client.config.userRoleMatches
+            var emailMatches = email == null ? new List<ulong>() : client.config.userRoleMatches
                 .Where(x => x.userDetailInformation.Any(u => u.email == email)) // check for email
                 .Select(x => x.role); // grab roles
 
@@ -272,25 +333,49 @@ namespace TU20Bot {
             ISocketMessageChannel channel, SocketReaction reaction) {
             await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Add);
 
-            if (client.config.eventBuilders.TryGetValue(reaction.UserId, out var builder))
-                await builder.addReaction(message.Id, reaction);
+            // Check if this may be a reaction to an event prompt.
+            if (channel.Id == client.config.eventsChannelId
+                && reaction.UserId != client.CurrentUser.Id) {
+                // Find a tag that matches the emoji being reacted.
+                var tag = Tag.allTags.FirstOrDefault(x => x.emoji == reaction.Emote.Name);
 
-            if (reaction.UserId != client.CurrentUser.Id
-                && channel.Id == client.config.approvalChannelId
-                && channel is IGuildChannel guildChannel) {
-                var user = await guildChannel.Guild.GetUserAsync(reaction.UserId);
-                var permissions = user.GetPermissions(guildChannel);
+                var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
+
+                // Matches all events where the poster is the reactor...
+                // ... and the reaction has been made to a prompt message.
+                var relevant = Builders<EventModel>.Filter.And(
+                    Builders<EventModel>.Filter.Eq(x => x.promptId, message.Id),
+                    Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
+                );
                 
-                // Just some requirement for approving messages.
-                if (permissions.ManageChannel) {
-                    switch (reaction.Emote.Name) {
-                        case "✅":
-                            await EventBuilder.approve(client, user, message.Id);
-                            break;
+                if (tag != null) {
+                    // If a specific tag was reacted, we'd like to add it to the model in the DB.
+                    await eventCollection.FindOneAndUpdateAsync(
+                        relevant,
+                        Builders<EventModel>.Update.AddToSet(x => x.tagIds, tag.id)
+                    );
+                } else if (reaction.Emote.Name == "✅") {
+                    // Otherwise, if the ✅ emoji was reacted, lets do some closing work.
+                    
+                    // Remove the prompt from the DB.
+                    var model = await eventCollection.FindOneAndUpdateAsync(
+                        relevant,
+                        Builders<EventModel>.Update.Set(x => x.promptId, null) // unset :thinking:
+                    );
+                    
+                    if (model != null) {
+                        // Remove the prompt from real life.
+                        await channel.DeleteMessageAsync(message.Id);
 
-                        case "❌":
-                            await EventBuilder.reject(client, user, message.Id);
-                            break;
+                        // And lets add the relevant reactions to the original message if possible.
+                        if (await channel.GetMessageAsync(model.messageId) is IUserMessage original) {
+                            // Some trickery to convert tag ids to emojis and vice-versa.
+                            await original.AddReactionsAsync(model.tagIds
+                                .Select(x => Tag.allTags.FirstOrDefault(y => y.id == x))
+                                .Where(x => x != null)
+                                .Select(x => new Emoji(x.emoji) as IEmote)
+                                .ToArray());
+                        }
                     }
                 }
             }
@@ -299,9 +384,29 @@ namespace TU20Bot {
         private async Task reactionRemove(Cacheable<IUserMessage, ulong> message,
             ISocketMessageChannel channel, SocketReaction reaction) {
             await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Remove);
+            
+            // Check if this action might be related to an event prompt.
+            if (channel.Id == client.config.eventsChannelId) {
+                // Find a tag that matches the emoji being dropped.
+                var tag = Tag.allTags.FirstOrDefault(x => x.emoji == reaction.Emote.Name);
 
-            if (client.config.eventBuilders.TryGetValue(reaction.UserId, out var builder))
-                await builder.removeReaction(message.Id, reaction);
+                var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
+                
+                // Matches all events where the poster is the reactor...
+                // ... and the reaction has been made to a prompt message.
+                var relevant = Builders<EventModel>.Filter.And(
+                    Builders<EventModel>.Filter.Eq(x => x.promptId, message.Id),
+                    Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
+                );
+                
+                if (tag != null) {
+                    // If a tag was found, lets drop all instances of this tag from the DB model.
+                    await eventCollection.FindOneAndUpdateAsync(
+                        relevant,
+                        Builders<EventModel>.Update.Pull(x => x.tagIds, tag.id)
+                    );
+                }
+            }
         }
 
         // Initializes the Message Handler, subscribe to events, etc.
@@ -312,6 +417,7 @@ namespace TU20Bot {
             client.UserLeft += userLeft;
             client.UserJoined += userJoined;
             client.MessageReceived += messageReceived;
+            client.MessageDeleted += messageDeleted;
             client.UserVoiceStateUpdated += voiceUpdated;
             client.ReactionAdded += reactionAdded;
             client.ReactionRemoved += reactionRemove;

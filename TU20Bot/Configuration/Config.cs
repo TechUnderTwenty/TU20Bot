@@ -76,8 +76,7 @@ namespace TU20Bot.Configuration {
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
         public ulong errorChannelId = 736741911150198835; // #bot-testing
 
-        public ulong approvalChannelId = 807690823201718335; // #approval
-        public ulong submissionsChannelId = 807290058818060319; // #submissions
+        public ulong eventsChannelId = 595948881511055380; // #events-and-opportunities
 
         public List<string> welcomeMessages = new List<string> {
             "Welcome",
@@ -88,10 +87,6 @@ namespace TU20Bot.Configuration {
         public readonly List<LogEntry> logs = new List<LogEntry>();
         public readonly List<ReactorDescription> reactors = new List<ReactorDescription>();
         public readonly List<FactoryDescription> factories = new List<FactoryDescription>();
-
-        // Doesn't need to be persistent, but I want to connect it to some kind of state.
-        [XmlIgnore]
-        public readonly Dictionary<ulong, EventBuilder> eventBuilders = new Dictionary<ulong, EventBuilder>();
 
         public static void save(Config config, string path = defaultPath) {
             var serializer = new XmlSerializer(typeof(Config));

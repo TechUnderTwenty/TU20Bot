@@ -14,6 +14,7 @@ namespace TU20Bot.Models {
         public string commonName;
         public string emoji;
 
+        // Some examples, add up to 20 total tags before bad things happen.
         public static readonly Tag[] allTags = {
             new Tag {
                 id = "hangout",
@@ -44,52 +45,17 @@ namespace TU20Bot.Models {
         
         public const string collectionName = "events";
 
-        public string name;
-        public string description;
-        public string image;
-        public List<string> resources = new List<string>();
+        public ulong authorId;
+        
+        public ulong messageId;
+        public string messageLink;
+        public string messageContent;
 
-        public ulong approvalMessage;
-        public string submissionLink;
-
+        public ulong? promptId;
+        
         public List<string> tagIds = new List<string>();
 
-        public ulong authorId;
-        public string authorAvatar;
-        public string authorUsername;
-
+        // Used by MongoDB to sort.
         public double? textScore;
-
-        public Embed makeEmbed() {
-            var builder = new EmbedBuilder()
-                .WithColor(Color.DarkBlue)
-                .WithTitle(name)
-                .WithFooter(authorUsername, authorAvatar);
-            
-            if (description != null)
-                builder.Description = description;
-            if (image != null)
-                builder.ThumbnailUrl = image;
-            if (resources.FirstOrDefault() != null)
-                builder.Url = resources.First();
-            if (tagIds.Any()) {
-                builder.Fields.Add(new EmbedFieldBuilder()
-                    .WithName("Tags")
-                    .WithValue(string.Join(", ", tagIds
-                        .Select(x => Tag.allTags.FirstOrDefault(y => y.id == x))
-                        .Where(x => x != null)
-                        .Select(x => $"{x.commonName}")))
-                    .WithIsInline(false));
-            }
-
-            if (resources.Any()) {
-                builder.Fields.Add(new EmbedFieldBuilder()
-                    .WithName("Resources")
-                    .WithValue(string.Join("\n", resources.Select((x, i) => $"[{i + 1}] {x}")))
-                    .WithIsInline(false));
-            }
-
-            return builder.Build();
-        }
     }
 }
