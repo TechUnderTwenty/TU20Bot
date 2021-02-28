@@ -62,7 +62,7 @@ namespace TU20Bot.Commands {
             // Provide the user feedback.
             try {
                 var dmChannel = await Context.User.GetOrCreateDMChannelAsync();
-                await dmChannel.SendMessageAsync("You have been verified. Thanks.");
+                await dmChannel.SendMessageAsync("Your email has been succesfully added to our system! Thank you");
             } catch (Exception) { /* ignore */ }
         }
     }
