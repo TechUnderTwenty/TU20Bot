@@ -62,7 +62,10 @@ namespace TU20Bot.Commands {
             // Provide the user feedback.
             try {
                 var dmChannel = await Context.User.GetOrCreateDMChannelAsync();
-                await dmChannel.SendMessageAsync("Your email has been succesfully added to our system! Thank you");
+                await dmChannel.SendMessageAsync(
+                    "Thank you for your submission."+
+                    "Your email has been added to our event matching system and you have been given the verified role!"+
+                    "If you join any future events you will automatically be assigned the relevant event role on the TU20 Discord server!");
             } catch (Exception) { /* ignore */ }
         }
     }
