@@ -39,6 +39,11 @@ namespace TU20Bot.Models {
         };
     }
     
+    public enum EventState {
+        Draft,
+        Confirmed,
+    }
+
     public class EventModel {
         [BsonId]
         public ObjectId id;
@@ -57,5 +62,7 @@ namespace TU20Bot.Models {
 
         // Used by MongoDB to sort.
         public double? textScore;
+
+        public EventState state;
     }
 }
