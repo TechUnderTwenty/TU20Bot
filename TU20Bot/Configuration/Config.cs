@@ -7,8 +7,6 @@ using System.Collections.Generic;
 
 using EmbedIO.Utilities;
 
-using TU20Bot.Support;
-
 namespace TU20Bot.Configuration {
     public enum LogEvent {
         UserJoin,
