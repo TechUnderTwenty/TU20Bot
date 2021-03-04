@@ -74,6 +74,8 @@ namespace TU20Bot.Configuration {
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
         public ulong errorChannelId = 736741911150198835; // #bot-testing
 
+        public ulong eventsChannelId = 595948881511055380; // #events-and-opportunities
+
         public List<string> welcomeMessages = new List<string> {
             "Welcome",
             "Greetings"

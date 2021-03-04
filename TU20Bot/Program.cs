@@ -34,12 +34,11 @@ namespace TU20Bot {
             } else {
                 Console.WriteLine("Skipping database initialization, no URL provided...");
             }
+            
+            handler = new Handler();
+            client = new Client(config, handler, database);
 
-            client = new Client(config, database);
-            
-            handler = new Handler(client);
-            
-            await handler.init();
+            await handler.init(client);
             
             await client.LoginAsync(TokenType.Bot, config.token);
             await client.StartAsync();

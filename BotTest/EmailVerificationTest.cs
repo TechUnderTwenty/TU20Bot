@@ -44,7 +44,7 @@ namespace BotTest {
             mongo = new MongoClient(config.mongoUrl);
             database = mongo.GetDatabase(config.databaseName);
 
-            client = new Client(config, null);
+            client = new Client(config, null, null);
 
             // TODO: Implement w/ MongoDB
             // dbComm = new DbCommUnverifiedUser(new BotDbContext());

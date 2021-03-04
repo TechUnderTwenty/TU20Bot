@@ -3,10 +3,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
+using CsvHelper;
+using CsvHelper.Configuration;
 using TU20Bot;
 using TU20Bot.Support;
 using TU20Bot.Configuration;
@@ -24,6 +26,17 @@ namespace BotTest {
                 email = "johndoe@tu20.com"
             }
         };
+        
+        private const string csvFilePath = "Data/ExpoData.csv";
+
+        private static List<UserDetails> readFile() {
+            using var reader = new StreamReader(csvFilePath);
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) {
+                TrimOptions = TrimOptions.Trim
+            });
+            
+            return csv.GetRecords<UserDetails>().ToList();
+        }
 
         [ClassInitialize]
         public static async Task setup(TestContext testContext) {
@@ -41,11 +54,11 @@ namespace BotTest {
 
             // Initializing all the required classes
             config = new Config();
-            client = new Client(config, null);
+            client = new Client(config, null, null);
 
             config.userRoleMatches.Add(new UserMatch {
                 role = 0,
-                userDetailInformation = CSVReader.readFile()
+                userDetailInformation = readFile()
             });
 
             // Logging in the bot
@@ -57,6 +70,7 @@ namespace BotTest {
                 ready = true;
                 return Task.CompletedTask;
             };
+            
             while (!ready) { }
         }
 
