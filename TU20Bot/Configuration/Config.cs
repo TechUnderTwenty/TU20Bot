@@ -73,8 +73,10 @@ namespace TU20Bot.Configuration {
         public ulong guildId = 230737273350520834; // TU20
         public ulong welcomeChannelId = 736741911150198835; // #bot-testing
         public ulong errorChannelId = 736741911150198835; // #bot-testing
-
         public ulong eventsChannelId = 595948881511055380; // #events-and-opportunities
+      
+        public ulong emailVerifiedRoleId = 816039399476822017; // Email Verified role within the TU20 guild
+
 
         public List<string> welcomeMessages = new List<string> {
             "Welcome",

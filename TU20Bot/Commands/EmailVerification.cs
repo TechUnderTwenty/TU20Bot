@@ -47,13 +47,14 @@ namespace TU20Bot.Commands {
                 .Where(x => x.userDetailInformation.Any(y => y.email == email)) // find any matches that have matching emails
                 .Select(x => guild.GetRole(x.role)) // grab the roles
                 .ToList();
-
+            
+            // We want to get the user again to make sure guild information is attached (in case of DM).
+            var guildUser = guild.GetUser(Context.User.Id);
             if (roles.Any()) {
-                // We want to get the user again to make sure guild information is attached (in case of DM).
-                var guildUser = guild.GetUser(Context.User.Id);
-                
                 await guildUser.AddRolesAsync(roles);
             }
+
+            await guildUser.AddRoleAsync(guild.GetRole(config.emailVerifiedRoleId));
 
             // If the message was not sent in a private (direct message) channel, remove it
             if (!(Context.Message.Channel is IPrivateChannel))
@@ -62,7 +63,10 @@ namespace TU20Bot.Commands {
             // Provide the user feedback.
             try {
                 var dmChannel = await Context.User.GetOrCreateDMChannelAsync();
-                await dmChannel.SendMessageAsync("You have been verified. Thanks.");
+                await dmChannel.SendMessageAsync(
+                    "Thank you for your submission."+
+                    "Your email has been added to our event matching system and you have been given the verified role!"+
+                    "If you join any future events you will automatically be assigned the relevant event role on the TU20 Discord server!");
             } catch (Exception) { /* ignore */ }
         }
     }
