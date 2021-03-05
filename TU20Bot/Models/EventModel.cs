@@ -38,11 +38,6 @@ namespace TU20Bot.Models {
             }
         };
     }
-    
-    public enum EventState {
-        Draft,
-        Confirmed,
-    }
 
     public class EventModel {
         [BsonId]
