@@ -137,9 +137,10 @@ namespace TU20Bot {
                         $"Hey <@{message.Author.Id}>.\n\n" +
                         "To finish submitting your event, " +
                         "please react to your original message with one of the following tags. " +
-                        "React with ✅ to this prompt to confirm your choices."+
+                        "React with ✅ to this prompt to confirm your choices." +
                         "React with ❌ to this prompt to cancel this action.\n\n" +
-                        "Do you have an idea for more tags? *Let us know!*"+
+                        "Do you have an idea for more tags? *Let us know!* " + 
+                        "You can send us a message in the #discussions channel." +
                         "\n**Currently Available Tags:**\n")
                         .WithFields(Tag.allTags
                         .Select(x => new EmbedFieldBuilder()
