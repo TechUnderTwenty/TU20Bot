@@ -137,8 +137,16 @@ namespace TU20Bot {
                         $"Hey <@{message.Author.Id}>.\n\n" +
                         "To finish submitting your event, " +
                         "please react to your original message with one of the following tags. " +
-                        "React with ✅ to this prompt to dismiss it.\n\n" +
-                        string.Join("\n\n", Tag.allTags.Select(x => $"{x.emoji}   {x.commonName}")))
+                        "React with ✅ to this prompt to confirm your choices." +
+                        "React with ❌ to this prompt to cancel this action.\n\n" +
+                        "Do you have an idea for more tags? *Let us know!* " + 
+                        "You can send us a message in the #discussions channel." +
+                        "\n**Currently Available Tags:**\n")
+                        .WithFields(Tag.allTags
+                        .Select(x => new EmbedFieldBuilder()
+                            .WithName(x.emoji)
+                            .WithValue(x.commonName)
+                            .WithIsInline(true)))
                     .Build());
 
                 // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
@@ -155,7 +163,8 @@ namespace TU20Bot {
                     messageLink = link(message),
                     messageContent = message.Content,
                     
-                    promptId = prompt.Id
+                    promptId = prompt.Id,
+                    isDraft = true
                 });
                 
                 // We also want to create an index for the collection so we can do text searching later.
@@ -163,42 +172,61 @@ namespace TU20Bot {
                     Builders<EventModel>.IndexKeys.Text(x => x.messageContent)
                 ));
 
-                // Add the example reactions, including tag emojis and ✅.
+                // Add the Confirm and Cancel Buttons first
+                await prompt.AddReactionsAsync(new Emoji[]{new Emoji("✅"), new Emoji("❌")});
+
+                // Add the sample reactions
                 await ((SocketUserMessage)message).AddReactionsAsync(
                     Tag.allTags.Select(x => new Emoji(x.emoji) as IEmote).ToArray());
-
-                await prompt.AddReactionAsync(new Emoji("✅"));
                 
                 // When a user reacts, work is picked up in Handler's reactionAdded and reactionRemoved.
             }
         }
 
-        private async Task messageDeleted(Cacheable<IMessage, ulong> message, ISocketMessageChannel channel) {
+        private async Task messageDeleted(Cacheable<IMessage, ulong> deletedMessage, ISocketMessageChannel channel) {
             // Check if the deleted message is relevant to the events submission channel.
             if (channel.Id == client.config.eventsChannelId) {
+                /*
+                 * This section handles the following cases:
+                 * Original message deleted:
+                 *          It should: Remove the event reference. Remove the event prompt.
+                 * Original message confirmed through prompt (The event prompt has been deleted):
+                 *          It should: Remove the reactions. Remove the event prompt.
+                 * Event prompt deleted before confirmation:
+                 *          This is an implied cancel. See below for details.
+                 * Event prompt canceled (❌) (The event prompt might has been deleted):
+                 *          It should: Remove the reactions. Remove the event reference. Remove the event prompt.
+                 */
+
                 var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
-                
+                // Remove the bot reactions to the original message if possible.
                 // Let's delete any record of the event if the original message was deleted.
                 var model = await eventCollection.FindOneAndDeleteAsync(
-                    Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id));
+                    Builders<EventModel>.Filter.Eq(x => x.messageId, deletedMessage.Id));
 
                 // Delete the prompt too, if it exists.
                 if (model?.promptId != null) {
                     await channel.DeleteMessageAsync(model.promptId.Value);
-                } else {
-                    // Otherwise, try to see if a prompt for a message was deleted.
+                } else if (model == null) {
+                    // When the flow reaches here then: the deletedMessage was not an indexed event (it is an event prompt or other)
+
+                    // Otherwise, try to see if an event prompt was deleted.
                     var promptModel = await eventCollection.FindOneAndUpdateAsync(
-                        Builders<EventModel>.Filter.Eq(x => x.promptId, message.Id),
+                        Builders<EventModel>.Filter.Eq(x => x.promptId, deletedMessage.Id),
                         Builders<EventModel>.Update.Set(x => x.promptId, null)
                     );
 
-                    // Then lets remove the bot reactions to the original message if possible.
-                    if (promptModel != null
-                        && await channel.GetMessageAsync(promptModel.messageId) is IUserMessage original) {
-                        // Some trickery to convert tag ids to emojis and vice-versa.
-                        var allTags = Tag.allTags.Select(x => new Emoji(x.emoji) as IEmote).ToArray();
+                    // If an event prompt was deleted,
+                    if (promptModel != null) {
+                        // If the event state is a draft (not confirmed), then the reference should be removed
+                        if (promptModel.isDraft){
+                            eventCollection.DeleteOne(Builders<EventModel>.Filter.Eq(e => e.id, promptModel.id));
+                        }
 
-                        await original.RemoveReactionsAsync(client.CurrentUser, allTags);
+                        // Remove all reactions from the "original" message, if possible
+                        if (await channel.GetMessageAsync(promptModel.messageId) is IUserMessage original) {
+                            await removeAllEventReactions(original);
+                        }
                     }
                 }
             }
@@ -357,8 +385,7 @@ namespace TU20Bot {
             await modifyRole(message.Id, channel, reaction, ModifyRoleOp.Add);
 
             // Check if this may be a reaction to an event prompt.
-            if (channel.Id == client.config.eventsChannelId
-                && reaction.UserId != client.CurrentUser.Id) {
+            if (channel.Id == client.config.eventsChannelId && reaction.UserId != client.CurrentUser.Id) {
                 // Find a tag that matches the emoji being reacted.
                 var tag = Tag.allTags.FirstOrDefault(x => x.emoji == reaction.Emote.Name);
 
@@ -375,22 +402,26 @@ namespace TU20Bot {
                         ),
                         Builders<EventModel>.Update.AddToSet(x => x.tagIds, tag.id)
                     );
-                } else if (reaction.Emote.Name == "✅") {
-                    // Otherwise, if the ✅ emoji was reacted, lets do some closing work.
+                } else if (reaction.Emote.Name == "✅" || reaction.Emote.Name == "❌") {
+                    // Otherwise, if the ✅ or ❌ emojis were reacted, lets do some closing work.
 
-                    // Remove the prompt from the DB.
-                    var model = await (await eventCollection.FindAsync(
+                    var model = await eventCollection.FindOneAndUpdateAsync(
                         // Matches all events where the poster is the reactor...
                         // ... and the reaction has been made to the **prompt** message.
                         Builders<EventModel>.Filter.And(
                             Builders<EventModel>.Filter.Eq(x => x.promptId, message.Id),
                             Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
                         ),
-                        new FindOptions<EventModel> { Limit = 1 }
-                    )).FirstOrDefaultAsync();
+
+                        // When this is a confirmation event, update the isDraft state to false (if ❌ then it cannot be a confirmation event).
+                        // This intentionally avoids checking if any tags were added on the original message so that
+                        // the author can leave the current one unindexed such that it will only appear in searches
+                        Builders<EventModel>.Update.Set(x => x.isDraft, reaction.Emote.Name == "❌")
+                    );
                     
                     if (model != null) {
-                        // Remove the prompt from real life.
+
+                        // Remove the prompt.
                         await channel.DeleteMessageAsync(message.Id);
                         
                         // Actually, messageDeleted handler will take it from here.
@@ -423,6 +454,13 @@ namespace TU20Bot {
                     );
                 }
             }
+        }
+
+        // Given any message that the bot has access to, remove all event-indexing reactions placed by the bot.
+        private async Task removeAllEventReactions(IUserMessage message) {
+            // Some trickery to convert tag ids to emojis and vice-versa.
+            var allTags = Tag.allTags.Select(x => new Emoji(x.emoji) as IEmote).ToArray();
+            await message.RemoveReactionsAsync(client.CurrentUser, allTags);
         }
 
         // Initializes the Message Handler, subscribe to events, etc.

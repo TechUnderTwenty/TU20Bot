@@ -38,7 +38,7 @@ namespace TU20Bot.Models {
             }
         };
     }
-    
+
     public class EventModel {
         [BsonId]
         public ObjectId id;
@@ -57,5 +57,7 @@ namespace TU20Bot.Models {
 
         // Used by MongoDB to sort.
         public double? textScore;
+
+        public bool isDraft;
     }
 }
