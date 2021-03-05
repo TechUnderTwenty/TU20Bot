@@ -139,9 +139,11 @@ namespace TU20Bot {
                         "please react to your original message with one of the following tags. " +
                         "React with ✅ to this prompt to confirm your choices."+
                         "React with ❌ to this prompt to cancel this action.\n\n" +
-                        "**Currently Available Tags:**\n" +
-                        string.Join("\n\n", Tag.allTags.Select(x => $"{x.emoji}   {x.commonName}")) +
-                        "\nDo you have an idea for more tags? *Let us know!*")
+                        "Do you have an idea for more tags? *Let us know!*"+
+                        "\n**Currently Available Tags:**\n")
+                        .WithFields(Tag.allTags
+                        .Select(x => new EmbedFieldBuilder()
+                            .WithName(x.emoji).WithValue(x.commonName).WithIsInline(true)))
                     .Build());
 
                 // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
