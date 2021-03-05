@@ -143,7 +143,9 @@ namespace TU20Bot {
                         "\n**Currently Available Tags:**\n")
                         .WithFields(Tag.allTags
                         .Select(x => new EmbedFieldBuilder()
-                            .WithName(x.emoji).WithValue(x.commonName).WithIsInline(true)))
+                            .WithName(x.emoji)
+                            .WithValue(x.commonName)
+                            .WithIsInline(true)))
                     .Build());
 
                 // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
