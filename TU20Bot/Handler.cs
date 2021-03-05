@@ -166,14 +166,10 @@ namespace TU20Bot {
                     Builders<EventModel>.IndexKeys.Text(x => x.messageContent)
                 ));
 
-                /// Add the Confirm and Cancel Buttons first
-                // Add Check-button for confirming the request
-                await prompt.AddReactionAsync(new Emoji("✅"));
+                // Add the Confirm and Cancel Buttons first
+                await prompt.AddReactionsAsync(new Emoji[]{new Emoji("✅"), new Emoji("❌")});
 
-                // Add X-button for canceling the request
-                await prompt.AddReactionAsync(new Emoji("❌"));
-
-                // Add the example reactions
+                // Add the sample reactions
                 await ((SocketUserMessage)message).AddReactionsAsync(
                     Tag.allTags.Select(x => new Emoji(x.emoji) as IEmote).ToArray());
                 
@@ -205,7 +201,7 @@ namespace TU20Bot {
                 // Delete the prompt too, if it exists.
                 if (model?.promptId != null) {
                     await channel.DeleteMessageAsync(model.promptId.Value);
-                } else if(model == null) {
+                } else if (model == null) {
                     // When the flow reaches here then: the deletedMessage was not an indexed event (it is an event prompt or other)
 
                     // Otherwise, try to see if an event prompt was deleted.
@@ -215,14 +211,14 @@ namespace TU20Bot {
                     );
 
                     // If an event prompt was deleted,
-                    if(promptModel != null) {
+                    if (promptModel != null) {
                         // If the event state is a draft (not confirmed), then the reference should be removed
-                        if(promptModel.state == EventState.Draft){
+                        if (promptModel.state == EventState.Draft){
                             eventCollection.DeleteOne(Builders<EventModel>.Filter.Eq(e => e.id, promptModel.id));
                         }
 
                         // Remove all reactions from the "original" message, if possible
-                        if(await channel.GetMessageAsync(promptModel.messageId) is IUserMessage original) {
+                        if (await channel.GetMessageAsync(promptModel.messageId) is IUserMessage original) {
                             await removeAllEventReactions(original);
                         }
                     }
@@ -403,26 +399,21 @@ namespace TU20Bot {
                 } else if (reaction.Emote.Name == "✅" || reaction.Emote.Name == "❌") {
                     // Otherwise, if the ✅ or ❌ emojis were reacted, lets do some closing work.
 
-                    var model = await (await eventCollection.FindAsync(
+                    var model = await eventCollection.FindOneAndUpdateAsync(
                         // Matches all events where the poster is the reactor...
                         // ... and the reaction has been made to the **prompt** message.
                         Builders<EventModel>.Filter.And(
                             Builders<EventModel>.Filter.Eq(x => x.promptId, message.Id),
                             Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
                         ),
-                        new FindOptions<EventModel> { Limit = 1 }
-                    )).FirstOrDefaultAsync();
-                    
-                    if (model != null) {
+
                         // If this is a confirmation, then update the state to Confirmed.
                         // This intentionally avoids checking if any tags were added on the original message so that
                         // the author can leave the current one unindexed such that it will only appear in searches
-                         if( reaction.Emote.Name == "✅") {
-                             await eventCollection.FindOneAndUpdateAsync(
-                                Builders<EventModel>.Filter.Eq(x => x.id, model.id), 
-                                Builders<EventModel>.Update.Set(x => x.state, EventState.Confirmed)
-                            );
-                        }
+                        Builders<EventModel>.Update.Set(x => x.state, reaction.Emote.Name == "✅" ? EventState.Confirmed : EventState.Draft)
+                    );
+                    
+                    if (model != null) {
 
                         // Remove the prompt.
                         await channel.DeleteMessageAsync(message.Id);
