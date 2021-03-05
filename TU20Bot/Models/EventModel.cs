@@ -63,6 +63,6 @@ namespace TU20Bot.Models {
         // Used by MongoDB to sort.
         public double? textScore;
 
-        public EventState state;
+        public bool isDraft;
     }
 }

@@ -161,7 +161,7 @@ namespace TU20Bot {
                     messageContent = message.Content,
                     
                     promptId = prompt.Id,
-                    state = EventState.Draft
+                    isDraft = true
                 });
                 
                 // We also want to create an index for the collection so we can do text searching later.
@@ -216,7 +216,7 @@ namespace TU20Bot {
                     // If an event prompt was deleted,
                     if (promptModel != null) {
                         // If the event state is a draft (not confirmed), then the reference should be removed
-                        if (promptModel.state == EventState.Draft){
+                        if (promptModel.isDraft){
                             eventCollection.DeleteOne(Builders<EventModel>.Filter.Eq(e => e.id, promptModel.id));
                         }
 
@@ -410,10 +410,10 @@ namespace TU20Bot {
                             Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
                         ),
 
-                        // If this is a confirmation, then update the state to Confirmed.
+                        // When this is a confirmation event, update the isDraft state to false (if ❌ then it cannot be a confirmation event).
                         // This intentionally avoids checking if any tags were added on the original message so that
                         // the author can leave the current one unindexed such that it will only appear in searches
-                        Builders<EventModel>.Update.Set(x => x.state, reaction.Emote.Name == "✅" ? EventState.Confirmed : EventState.Draft)
+                        Builders<EventModel>.Update.Set(x => x.isDraft, reaction.Emote.Name == "❌")
                     );
                     
                     if (model != null) {
