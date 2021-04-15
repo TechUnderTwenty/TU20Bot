@@ -51,8 +51,6 @@ namespace TU20Bot.Models {
         public string messageLink;
         public string messageContent;
 
-        public ulong? promptId;
-        
         public List<string> tagIds = new List<string>();
 
         // Used by MongoDB to sort.
