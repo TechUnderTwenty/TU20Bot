@@ -366,13 +366,17 @@ namespace TU20Bot {
                         // the author can leave the current one unindexed such that it will only appear in searches
                         Builders<EventModel>.Update.Set(x => x.isDraft, reaction.Emote.Name == "❌")
                     );
-                    
-                    if (model != null) {
 
-                        // Remove the prompt.
-                        await channel.DeleteMessageAsync(message.Id);
-                        
-                        // Actually, messageDeleted handler will take it from here.
+                    if (model != null) {
+                        var local = await message.GetOrDownloadAsync();
+
+                        await local.RemoveReactionsAsync(client.CurrentUser, Tag.allTags
+                            .Select(x => (IEmote)new Emoji(x.emoji))
+                            .Append(new Emoji("✅"))
+                            .Append(new Emoji("❌"))
+                            .ToArray());
+
+                        await local.RemoveReactionAsync(reaction.Emote, local.Author);
                     }
                 }
             }
