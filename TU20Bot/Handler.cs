@@ -115,52 +115,6 @@ namespace TU20Bot {
                     return;
                 }
             }
-
-            // If execution reaches here, the text should not have matched any command.
-            if (!userMessage.Author.IsBot && message.Channel.Id == client.config.eventsChannelId) {
-                var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
-                
-                // First, check if the user already has an event. Find Limit = 1 is more efficient but :/
-                var count = await eventCollection.CountDocumentsAsync(
-                    Builders<EventModel>.Filter.And(
-                        Builders<EventModel>.Filter.Eq(x => x.authorId, userMessage.Author.Id),
-                        Builders<EventModel>.Filter.Eq(x => x.isDraft, true)));
-
-                // If he hasn't dismissed his previous event, we won't let him create another.
-                if (count != 0)
-                    return;
-
-                // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
-                static string link(IMessage m) =>
-                    m.Channel is IGuildChannel c
-                        ? $"https://discord.com/channels/{c.Guild.Id}/{c.Id}/{m.Id}"
-                        : $"https://discord.com/channels/@me/{m.Channel}/{m.Id}";
-
-                // Add the event to the database with relevant details.
-                await eventCollection.InsertOneAsync(new EventModel {
-                    authorId = message.Author.Id,
-                    
-                    messageId = message.Id,
-                    messageLink = link(message),
-                    messageContent = message.Content,
-                    
-                    isDraft = true
-                });
-                
-                // We also want to create an index for the collection so we can do text searching later.
-                await eventCollection.Indexes.CreateOneAsync(new CreateIndexModel<EventModel>(
-                    Builders<EventModel>.IndexKeys.Text(x => x.messageContent)
-                ));
-
-                // Add the sample reactions
-                await ((SocketUserMessage)message).AddReactionsAsync(Tag.allTags
-                    .Select(x => new Emoji(x.emoji) as IEmote)
-                    .Append(new Emoji("✅"))
-                    .Append(new Emoji("❌"))
-                    .ToArray());
-                
-                // When a user reacts, work is picked up in Handler's reactionAdded and reactionRemoved.
-            }
         }
 
         private async Task messageDeleted(Cacheable<IMessage, ulong> deletedMessage, ISocketMessageChannel channel) {
@@ -339,45 +293,44 @@ namespace TU20Bot {
 
                 var eventCollection = client.database.GetCollection<EventModel>(EventModel.collectionName);
 
-                if (tag != null) {
-                    // If a specific tag was reacted, we'd like to add it to the model in the DB.
-                    await eventCollection.FindOneAndUpdateAsync(
-                        // Matches all events where the poster is the reactor...
-                        // ... and the reaction has been made to the **original message** message.
-                        Builders<EventModel>.Filter.And(
-                            Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id),
-                            Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
-                        ),
-                        Builders<EventModel>.Update.AddToSet(x => x.tagIds, tag.id)
-                    );
-                } else if (reaction.Emote.Name == "✅" || reaction.Emote.Name == "❌") {
-                    // Otherwise, if the ✅ or ❌ emojis were reacted, lets do some closing work.
+                if (tag == null)
+                    return;
+                
+                // If a specific tag was reacted, we'd like to add it to the model in the DB.
+                var model = await eventCollection.FindOneAndUpdateAsync(
+                    // Matches all events where the poster is the reactor...
+                    // ... and the reaction has been made to the **original message** message.
+                    Builders<EventModel>.Filter.And(
+                        Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id),
+                        Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
+                    ),
+                    Builders<EventModel>.Update.AddToSet(x => x.tagIds, tag.id)
+                );
 
-                    var model = await eventCollection.FindOneAndUpdateAsync(
-                        // Matches all events where the poster is the reactor...
-                        // ... and the reaction has been made to the **prompt** message.
-                        Builders<EventModel>.Filter.And(
-                            Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id),
-                            Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
-                        ),
+                // No model for the message in the DB, add one.
+                if (model == null) {
+                    // Generates a link to a discord message. There's a case for DM messages, but its unnecessary.
+                    static string link(IMessage m) =>
+                        m.Channel is IGuildChannel c
+                            ? $"https://discord.com/channels/{c.Guild.Id}/{c.Id}/{m.Id}"
+                            : $"https://discord.com/channels/@me/{m.Channel}/{m.Id}";
 
-                        // When this is a confirmation event, update the isDraft state to false (if ❌ then it cannot be a confirmation event).
-                        // This intentionally avoids checking if any tags were added on the original message so that
-                        // the author can leave the current one unindexed such that it will only appear in searches
-                        Builders<EventModel>.Update.Set(x => x.isDraft, reaction.Emote.Name == "❌")
-                    );
+                    var messageContainer = await message.GetOrDownloadAsync();
 
-                    if (model != null) {
-                        var local = await message.GetOrDownloadAsync();
-
-                        await local.RemoveReactionsAsync(client.CurrentUser, Tag.allTags
-                            .Select(x => (IEmote)new Emoji(x.emoji))
-                            .Append(new Emoji("✅"))
-                            .Append(new Emoji("❌"))
-                            .ToArray());
-
-                        await local.RemoveReactionAsync(reaction.Emote, local.Author);
-                    }
+                    // Add the event to the database with relevant details.
+                    await eventCollection.InsertOneAsync(new EventModel {
+                        authorId = messageContainer.Author.Id,
+                    
+                        messageId = message.Id,
+                        messageLink = link(messageContainer),
+                        messageContent = messageContainer.Content,
+                        tagIds = new List<string> { tag.id }
+                    });
+                
+                    // We also want to create an index for the collection so we can do text searching later.
+                    await eventCollection.Indexes.CreateOneAsync(new CreateIndexModel<EventModel>(
+                        Builders<EventModel>.IndexKeys.Text(x => x.messageContent)
+                    ));
                 }
             }
         }
@@ -395,15 +348,20 @@ namespace TU20Bot {
                 
                 if (tag != null) {
                     // If a tag was found, lets drop all instances of this tag from the DB model.
-                    await eventCollection.FindOneAndUpdateAsync(
+                    var model = await eventCollection.FindOneAndUpdateAsync(
                         // Matches all events where the poster is the reactor...
                         // ... and the reaction has been made to the **original message** message.
                         Builders<EventModel>.Filter.And(
                             Builders<EventModel>.Filter.Eq(x => x.messageId, message.Id),
                             Builders<EventModel>.Filter.Eq(x => x.authorId, reaction.UserId)
                         ),
-                        Builders<EventModel>.Update.Pull(x => x.tagIds, tag.id)
+                        Builders<EventModel>.Update.Pull(x => x.tagIds, tag.id),
+                        new FindOneAndUpdateOptions<EventModel> { ReturnDocument = ReturnDocument.After }
                     );
+
+                    if (!model.tagIds.Any()) {
+                        await eventCollection.DeleteOneAsync(Builders<EventModel>.Filter.Eq(x => x.id, model.id));
+                    }
                 }
             }
         }
