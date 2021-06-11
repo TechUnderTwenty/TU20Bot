@@ -94,5 +94,20 @@ namespace TU20Bot.Commands {
             // Print the results.
             await printResults(await resultCursor.ToListAsync(), name);
         }
+
+        [Command("list-events")]
+        public async Task listEvents() {
+            var collection = client.database.GetCollection<EventModel>(EventModel.collectionName);
+
+            // Get the last 5 events in the database.
+            var resultCursor = await collection.FindAsync(
+                Builders<EventModel>.Filter.Empty, new FindOptions<EventModel> {
+                    Sort = Builders<EventModel>.Sort.Descending(e => e.id),
+                    Limit = 5
+                });
+
+            // Print the results.
+            await printResults(await resultCursor.ToListAsync(), "No events available");
+        }
     }
 }
